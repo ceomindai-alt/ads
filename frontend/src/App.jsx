@@ -12,35 +12,47 @@ import { setAuthToken } from './api/api';
 import ExternalRedirect from './pages/ExternalRedirect';
 import RedirectPage from './pages/RedirectPage';
 
-// Immediately load token BEFORE rendering
+// Load token immediately at startup
 const savedToken = localStorage.getItem('token');
 if (savedToken) {
   setAuthToken(savedToken);
 }
 
-export default function App(){
+export default function App() {
   const [token, setToken] = useState(savedToken);
 
   useEffect(() => {
     setAuthToken(token);
   }, [token]);
 
+  function PrivateRoute({ children }) {
+    return token ? children : <Navigate to="/login" replace />;
+  }
+
   return (
     <>
-      <Navbar token={token} setToken={setToken}/>
+      <Navbar token={token} setToken={setToken} />
       <div className="container mx-auto p-4">
         <Routes>
-          <Route path="/" element={ token ? <Navigate to="/dashboard" /> : <Navigate to="/login" /> } />
+
+          {/* Auth Routes */}
+          <Route path="/" element={token ? <Navigate to="/dashboard" /> : <Navigate to="/register" />} />
           <Route path="/login" element={<Login setToken={setToken} />} />
           <Route path="/register" element={<Register setToken={setToken} />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/create" element={<CreateLink />} />
-          <Route path="/links" element={<LinksList />} />
-          <Route path="/analytics/:id" element={<Analytics />} />
-          <Route path="/withdraw" element={<Withdraw />} />
-          <Route path="/r/*" element={<ExternalRedirect />} />
-          <Route path="/r/:code" element={<RedirectPage />} />
 
+          {/* Protected Routes */}
+          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/create" element={<PrivateRoute><CreateLink /></PrivateRoute>} />
+          <Route path="/links" element={<PrivateRoute><LinksList /></PrivateRoute>} />
+          <Route path="/analytics/:id" element={<PrivateRoute><Analytics /></PrivateRoute>} />
+          <Route path="/withdraw" element={<PrivateRoute><Withdraw /></PrivateRoute>} />
+
+          {/* Redirect System */}
+          <Route path="/r/:code" element={<RedirectPage />} />
+          <Route path="/r/*" element={<ExternalRedirect />} />
+
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </>
