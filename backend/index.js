@@ -28,7 +28,6 @@ app.use(limiter);
 // routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/links', require('./routes/links'));
-app.use('/api/links', require('./routes/linksAnalytics'));
 
 app.use('/r', require('./routes/redirect'));
 app.use('/api/admin', require('./routes/admin'));
