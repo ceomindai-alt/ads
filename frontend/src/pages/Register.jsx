@@ -11,7 +11,7 @@ export default function Register({ setToken }) {
   const submit = async (e) => {
     e.preventDefault();
     try{
-      const res = await client.post('/auth/register', { name, email, password, referralCode: ref });
+      const res = await client.post('auth/register', { name, email, password, referralCode: ref });
       localStorage.setItem('token', res.data.token);
       setToken(res.data.token);
       window.location = '/dashboard';

@@ -9,7 +9,7 @@ export default function Login({ setToken }) {
   const submit = async (e) => {
     e.preventDefault();
     try{
-      const res = await client.post('/auth/login', { email, password });
+      const res = await client.post('auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
       setToken(res.data.token);
       window.location = '/dashboard';
