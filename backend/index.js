@@ -16,7 +16,10 @@ connectDB(process.env.MONGO_URI);
 app.use(helmet());
 app.use(express.json());
 app.use(morgan('dev'));
-app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
+app.use(cors({ 
+  origin: process.env.CLIENT_URL,
+  credentials: true 
+}));
 
 // basic rate limit
 const limiter = rateLimit({
