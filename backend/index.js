@@ -16,14 +16,22 @@ connectDB(process.env.MONGO_URI);
 app.use(helmet());
 app.use(express.json());
 app.use(morgan('dev'));
-app.use(cors({ 
-  origin: 'https://ads-1-lnqy.onrender.com',
-  credentials: true 
-}));
 
-// basic rate limit
+app.use(
+  cors({
+    origin: [
+      "https://ads-1-lnqy.onrender.com",
+      "http://localhost:5173"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  })
+);
+
+// rate limit
 const limiter = rateLimit({
-  windowMs: 15*60*1000,
+  windowMs: 15 * 60 * 1000,
   max: 300
 });
 app.use(limiter);
@@ -31,12 +39,10 @@ app.use(limiter);
 // routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/links', require('./routes/links'));
-
 app.use('/r', require('./routes/redirect'));
 app.use('/api/admin', require('./routes/admin'));
-app.use("/api/withdraw", require("./routes/withdraw"));
+app.use('/api/withdraw', require('./routes/withdraw'));
 
-
-app.get('/', (req,res) => res.send('LinkVerse API running'));
+app.get('/', (req, res) => res.send('LinkVerse API running'));
 
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));
