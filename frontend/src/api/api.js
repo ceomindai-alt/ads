@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_ROOT = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_ROOT =  'https://ads-2quj.onrender.com/';
 
 const client = axios.create({ baseURL: API_ROOT });
 
