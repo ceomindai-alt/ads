@@ -17,7 +17,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(morgan('dev'));
 app.use(cors({ 
-  origin: process.env.CLIENT_URL,
+  origin: 'https://ads-1-lnqy.onrender.com',
   credentials: true 
 }));
 
