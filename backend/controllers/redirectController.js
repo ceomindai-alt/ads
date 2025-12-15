@@ -6,18 +6,17 @@ const uaParser = require("ua-parser-js");
 const PLATFORM_COMMISSION = 0.30;
 
 /**
- * ⚠️ OPEN CSP – REQUIRED FOR ADSTERRA POP / DIRECT CPM
+ * OPEN CSP FOR ADSTERRA (Banner / Native)
  * APPLY ONLY ON /r/:code ROUTES
  */
 const ADSTERRA_CSP =
   "default-src * data: blob:; " +
-  "script-src * 'unsafe-inline' 'unsafe-eval'; " +
-  "script-src-elem * 'unsafe-inline' 'unsafe-eval'; " +
+  "script-src * 'unsafe-inline'; " +
+  "script-src-elem * 'unsafe-inline'; " +
   "style-src * 'unsafe-inline'; " +
   "img-src * data: blob:; " +
   "frame-src *; " +
-  "connect-src *; " +
-  "media-src * blob: data:;";
+  "connect-src *;";
 
 /* ===================== CLICK TRACKING (STEP 1 ONLY) ===================== */
 async function trackClick(req, link) {
@@ -48,81 +47,49 @@ async function trackClick(req, link) {
 
 /* ===================== STEP 1 ===================== */
 exports.premiumStep1 = async (req, res) => {
-  try {
-    const { code } = req.params;
+  const { code } = req.params;
+  const link = await Link.findOne({ $or: [{ shortCode: code }, { customAlias: code }] });
+  if (!link) return res.status(404).send("Invalid link");
 
-    const link = await Link.findOne({
-      $or: [{ shortCode: code }, { customAlias: code }]
-    });
-    if (!link) return res.status(404).send("Invalid link");
+  await trackClick(req, link);
+  res.setHeader("Content-Security-Policy", ADSTERRA_CSP);
 
-    await trackClick(req, link);
-    res.setHeader("Content-Security-Policy", ADSTERRA_CSP);
-
-    res.send(
-      stepPage({
-        title: "Step 1 of 3",
-        message: "Please wait to continue",
-        waitSeconds: 15,
-        nextUrl: `/r/${code}/step2`
-      })
-    );
-  } catch (err) {
-    console.error("STEP 1 ERROR:", err);
-    res.status(500).send("Step 1 Error");
-  }
+  res.send(stepPage({
+    title: "Step 1 of 3",
+    message: "Please wait to continue",
+    waitSeconds: 15,
+    nextUrl: `/r/${code}/step2`
+  }));
 };
 
 /* ===================== STEP 2 ===================== */
 exports.premiumStep2 = async (req, res) => {
-  try {
-    const { code } = req.params;
+  const { code } = req.params;
+  const link = await Link.findOne({ $or: [{ shortCode: code }, { customAlias: code }] });
+  if (!link) return res.status(404).send("Invalid link");
 
-    const link = await Link.findOne({
-      $or: [{ shortCode: code }, { customAlias: code }]
-    });
-    if (!link) return res.status(404).send("Invalid link");
+  res.setHeader("Content-Security-Policy", ADSTERRA_CSP);
 
-    res.setHeader("Content-Security-Policy", ADSTERRA_CSP);
-
-    res.send(
-      stepPage({
-        title: "Step 2 of 3",
-        message: "Your content will unlock soon",
-        waitSeconds: 15,
-        nextUrl: `/r/${code}/step3`
-      })
-    );
-  } catch (err) {
-    console.error("STEP 2 ERROR:", err);
-    res.status(500).send("Step 2 Error");
-  }
+  res.send(stepPage({
+    title: "Step 2 of 3",
+    message: "Almost there…",
+    waitSeconds: 15,
+    nextUrl: `/r/${code}/step3`
+  }));
 };
 
-/* ===================== STEP 3 (FINAL) ===================== */
+/* ===================== STEP 3 (FINAL WITH BUTTON) ===================== */
 exports.premiumStep3 = async (req, res) => {
-  try {
-    const { code } = req.params;
+  const { code } = req.params;
+  const link = await Link.findOne({ $or: [{ shortCode: code }, { customAlias: code }] });
+  if (!link || !link.originalUrl) return res.status(404).send("Invalid link");
 
-    const link = await Link.findOne({
-      $or: [{ shortCode: code }, { customAlias: code }]
-    });
-    if (!link || !link.originalUrl) {
-      return res.status(404).send("Invalid or broken link");
-    }
+  res.setHeader("Content-Security-Policy", ADSTERRA_CSP);
 
-    res.setHeader("Content-Security-Policy", ADSTERRA_CSP);
-
-    res.send(
-      finalPage({
-        waitSeconds: 10,
-        finalUrl: link.originalUrl
-      })
-    );
-  } catch (err) {
-    console.error("STEP 3 ERROR:", err);
-    res.status(500).send("Step 3 Error");
-  }
+  res.send(finalStepPage({
+    waitSeconds: 10,
+    finalUrl: link.originalUrl
+  }));
 };
 
 /* ===================== STEP PAGE (1 & 2) ===================== */
@@ -134,25 +101,14 @@ function stepPage({ title, message, waitSeconds, nextUrl }) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title}</title>
 
-<!-- ✅ ADSTERRA POP / DIRECT SCRIPT -->
-<script src="https://pl28261218.effectivegatecpm.com/3f/b8/da/3fb8da7c494bf238f9dcbb169f654d71.js"></script>
-
 <style>
-body{
-  margin:0;
-  background:#f6f4ff;
-  font-family:Arial;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  height:100vh;
-}
-.box{
+body{margin:0;background:#f6f4ff;font-family:Arial;}
+.wrapper{max-width:720px;margin:auto;padding:12px;}
+.ad{margin:12px 0;text-align:center;}
+.card{
   background:#fff;
   border-radius:18px;
   padding:26px;
-  max-width:520px;
-  width:92%;
   text-align:center;
   box-shadow:0 20px 40px rgba(0,0,0,.08);
 }
@@ -162,37 +118,43 @@ button{
   border-radius:999px;
   border:none;
   background:#7A5CFF;
-  color:white;
+  color:#fff;
   font-weight:600;
   opacity:.35;
 }
-button.active{
-  opacity:1;
-  cursor:pointer;
-}
+button.active{opacity:1;cursor:pointer;}
 </style>
 </head>
 
 <body>
-<div class="box">
-  <h2>${title}</h2>
-  <p>${message}</p>
-  <p>Continue in <strong><span id="t">${waitSeconds}</span>s</strong></p>
-  <button id="btn">Continue</button>
+<div class="wrapper">
+
+  <div class="ad"><!-- TOP AD 1 --></div>
+  <div class="ad"><!-- TOP AD 2 --></div>
+  <div class="ad"><!-- TOP AD 3 --></div>
+
+  <div class="card">
+    <h2>${title}</h2>
+    <p>${message}</p>
+    <p>Continue in <strong><span id="t">${waitSeconds}</span>s</strong></p>
+    <button id="btn">Continue</button>
+  </div>
+
+  <div class="ad"><!-- BOTTOM AD --></div>
+
 </div>
 
 <script>
 let t=${waitSeconds};
 const btn=document.getElementById("btn");
 const next="${nextUrl}";
-
 const timer=setInterval(()=>{
   t--;
   document.getElementById("t").innerText=t;
   if(t<=0){
     clearInterval(timer);
     btn.classList.add("active");
-    btn.onclick=()=>window.location.href=next;
+    btn.onclick=()=>location.href=next;
   }
 },1000);
 </script>
@@ -200,8 +162,8 @@ const timer=setInterval(()=>{
 </html>`;
 }
 
-/* ===================== FINAL PAGE ===================== */
-function finalPage({ waitSeconds, finalUrl }) {
+/* ===================== FINAL STEP (BUTTON ONLY) ===================== */
+function finalStepPage({ waitSeconds, finalUrl }) {
   return `
 <!DOCTYPE html>
 <html>
@@ -209,65 +171,61 @@ function finalPage({ waitSeconds, finalUrl }) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Final Step</title>
 
-<!-- ✅ ADSTERRA POP SCRIPT -->
-<script src="https://pl28261218.effectivegatecpm.com/3f/b8/da/3fb8da7c494bf238f9dcbb169f654d71.js"></script>
-
 <style>
-body{
-  margin:0;
-  background:#f6f4ff;
-  font-family:Arial;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  height:100vh;
-}
-.box{
+body{margin:0;background:#f6f4ff;font-family:Arial;}
+.wrapper{max-width:720px;margin:auto;padding:12px;}
+.ad{margin:12px 0;text-align:center;}
+.card{
   background:#fff;
   border-radius:18px;
   padding:26px;
-  max-width:520px;
-  width:92%;
   text-align:center;
   box-shadow:0 20px 40px rgba(0,0,0,.08);
 }
 button{
   margin-top:18px;
-  padding:12px 28px;
+  padding:14px 32px;
   border-radius:999px;
   border:none;
-  background:#7A5CFF;
-  color:white;
-  font-weight:600;
+  background:#28a745;
+  color:#fff;
+  font-weight:700;
+  font-size:16px;
   opacity:.35;
 }
-button.active{
-  opacity:1;
-  cursor:pointer;
-}
+button.active{opacity:1;cursor:pointer;}
 </style>
 </head>
 
 <body>
-<div class="box">
-  <h2>Final Step</h2>
-  <p>Your link is ready</p>
-  <p>Open in <strong><span id="t">${waitSeconds}</span>s</strong></p>
-  <button id="btn">Open Original Link</button>
+<div class="wrapper">
+
+  <div class="ad"><!-- TOP AD 1 --></div>
+  <div class="ad"><!-- TOP AD 2 --></div>
+  <div class="ad"><!-- TOP AD 3 --></div>
+
+  <div class="card">
+    <h2>Your download is ready</h2>
+    <p>Click the button after timer ends</p>
+    <h3><span id="t">${waitSeconds}</span>s</h3>
+    <button id="btn">Your Link</button>
+  </div>
+
+  <div class="ad"><!-- BOTTOM AD --></div>
+
 </div>
 
 <script>
 let t=${waitSeconds};
 const btn=document.getElementById("btn");
 const url="${finalUrl}";
-
 const timer=setInterval(()=>{
   t--;
   document.getElementById("t").innerText=t;
   if(t<=0){
     clearInterval(timer);
     btn.classList.add("active");
-    btn.onclick=()=>window.location.href=url;
+    btn.onclick=()=>window.open(url,"_self");
   }
 },1000);
 </script>
