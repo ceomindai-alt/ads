@@ -14,7 +14,42 @@ console.log("Loaded MONGO_URI:", process.env.MONGO_URI);
 connectDB(process.env.MONGO_URI);
 
 // middlewares
-app.use(helmet());
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "script-src": [
+          "'self'",
+          "'unsafe-inline'",
+          "https://pagead2.googlesyndication.com",
+          "https://googleads.g.doubleclick.net",
+          "https://www.googletagservices.com",
+          "https://ep2.adtrafficquality.google"
+        ],
+        "frame-src": [
+          "'self'",
+          "https://googleads.g.doubleclick.net",
+          "https://tpc.googlesyndication.com"
+        ],
+        "img-src": [
+          "'self'",
+          "data:",
+          "https:",
+          "https://googleads.g.doubleclick.net",
+          "https://pagead2.googlesyndication.com"
+        ],
+        "connect-src": [
+          "'self'",
+          "https://googleads.g.doubleclick.net",
+          "https://pagead2.googlesyndication.com"
+        ]
+      }
+    }
+  })
+);
+
 app.use(express.json());
 app.use(morgan('dev'));
 
