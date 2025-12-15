@@ -15,7 +15,6 @@ connectDB(process.env.MONGO_URI);
 
 // middlewares
 
-const helmet = require("helmet");
 
 app.use(
   helmet({
