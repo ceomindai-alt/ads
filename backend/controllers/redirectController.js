@@ -5,10 +5,21 @@ const uaParser = require("ua-parser-js");
 
 const PLATFORM_COMMISSION = 0.30;
 
-const GOOGLE_CSP =
-  "default-src 'self'; img-src * data: blob: https:; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.googletagservices.com; style-src 'self' 'unsafe-inline'; frame-src https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com; connect-src *; media-src * blob: data:;";
+/**
+ * ⚠️ OPEN CSP – REQUIRED FOR ADSTERRA POP / DIRECT CPM
+ * APPLY ONLY ON /r/:code ROUTES
+ */
+const ADSTERRA_CSP =
+  "default-src * data: blob:; " +
+  "script-src * 'unsafe-inline' 'unsafe-eval'; " +
+  "script-src-elem * 'unsafe-inline' 'unsafe-eval'; " +
+  "style-src * 'unsafe-inline'; " +
+  "img-src * data: blob:; " +
+  "frame-src *; " +
+  "connect-src *; " +
+  "media-src * blob: data:;";
 
-/* ===================== CLICK TRACKING ===================== */
+/* ===================== CLICK TRACKING (STEP 1 ONLY) ===================== */
 async function trackClick(req, link) {
   const ua = uaParser(req.headers["user-agent"] || "");
   const ip = req.headers["x-forwarded-for"] || req.ip;
@@ -43,19 +54,17 @@ exports.premiumStep1 = async (req, res) => {
     const link = await Link.findOne({
       $or: [{ shortCode: code }, { customAlias: code }]
     });
-
     if (!link) return res.status(404).send("Invalid link");
 
     await trackClick(req, link);
-    res.setHeader("Content-Security-Policy", GOOGLE_CSP);
+    res.setHeader("Content-Security-Policy", ADSTERRA_CSP);
 
     res.send(
       stepPage({
         title: "Step 1 of 3",
-        message: "Watch ads to continue",
-        waitSeconds: 20,
-        nextUrl: `/r/${code}/step2`,
-        adSlot: process.env.SLOT_TOP
+        message: "Please wait to continue",
+        waitSeconds: 15,
+        nextUrl: `/r/${code}/step2`
       })
     );
   } catch (err) {
@@ -72,18 +81,16 @@ exports.premiumStep2 = async (req, res) => {
     const link = await Link.findOne({
       $or: [{ shortCode: code }, { customAlias: code }]
     });
-
     if (!link) return res.status(404).send("Invalid link");
 
-    res.setHeader("Content-Security-Policy", GOOGLE_CSP);
+    res.setHeader("Content-Security-Policy", ADSTERRA_CSP);
 
     res.send(
       stepPage({
         title: "Step 2 of 3",
         message: "Your content will unlock soon",
-        waitSeconds: 20,
-        nextUrl: `/r/${code}/step3`,
-        adSlot: process.env.SLOT_MID
+        waitSeconds: 15,
+        nextUrl: `/r/${code}/step3`
       })
     );
   } catch (err) {
@@ -92,7 +99,7 @@ exports.premiumStep2 = async (req, res) => {
   }
 };
 
-/* ===================== STEP 3 (FINAL WITH BUTTON) ===================== */
+/* ===================== STEP 3 (FINAL) ===================== */
 exports.premiumStep3 = async (req, res) => {
   try {
     const { code } = req.params;
@@ -100,18 +107,16 @@ exports.premiumStep3 = async (req, res) => {
     const link = await Link.findOne({
       $or: [{ shortCode: code }, { customAlias: code }]
     });
-
     if (!link || !link.originalUrl) {
       return res.status(404).send("Invalid or broken link");
     }
 
-    res.setHeader("Content-Security-Policy", GOOGLE_CSP);
+    res.setHeader("Content-Security-Policy", ADSTERRA_CSP);
 
     res.send(
       finalPage({
-        waitSeconds: 15,
-        finalUrl: link.originalUrl,
-        adSlot: process.env.SLOT_BOTTOM
+        waitSeconds: 10,
+        finalUrl: link.originalUrl
       })
     );
   } catch (err) {
@@ -120,41 +125,60 @@ exports.premiumStep3 = async (req, res) => {
   }
 };
 
-/* ===================== STEP PAGE ===================== */
-function stepPage({ title, message, waitSeconds, nextUrl, adSlot }) {
+/* ===================== STEP PAGE (1 & 2) ===================== */
+function stepPage({ title, message, waitSeconds, nextUrl }) {
   return `
 <!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title}</title>
+
+<!-- ✅ ADSTERRA POP / DIRECT SCRIPT -->
+<script src="https://pl28261218.effectivegatecpm.com/3f/b8/da/3fb8da7c494bf238f9dcbb169f654d71.js"></script>
+
 <style>
-body{margin:0;background:#f6f4ff;font-family:Arial;display:flex;align-items:center;justify-content:center;height:100vh;}
-.box{background:#fff;border-radius:18px;padding:26px;max-width:520px;width:92%;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,.08);}
-button{margin-top:18px;padding:12px 28px;border-radius:999px;border:none;background:#7A5CFF;color:white;font-weight:600;opacity:.35;cursor:not-allowed;}
-button.active{opacity:1;cursor:pointer;}
-#ad{margin:18px 0;padding:12px;border:1px solid #e6e3ff;border-radius:14px;min-height:90px;}
+body{
+  margin:0;
+  background:#f6f4ff;
+  font-family:Arial;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+}
+.box{
+  background:#fff;
+  border-radius:18px;
+  padding:26px;
+  max-width:520px;
+  width:92%;
+  text-align:center;
+  box-shadow:0 20px 40px rgba(0,0,0,.08);
+}
+button{
+  margin-top:18px;
+  padding:12px 28px;
+  border-radius:999px;
+  border:none;
+  background:#7A5CFF;
+  color:white;
+  font-weight:600;
+  opacity:.35;
+}
+button.active{
+  opacity:1;
+  cursor:pointer;
+}
 </style>
 </head>
 
 <body>
 <div class="box">
-<h2>${title}</h2>
-<p>${message}</p>
-
-<div id="ad">
-  <ins class="adsbygoogle"
-    style="display:block"
-    data-ad-client="${process.env.AD_CLIENT}"
-    data-ad-slot="${adSlot}">
-  </ins>
-</div>
-
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.AD_CLIENT}" crossorigin="anonymous"></script>
-<script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
-
-<p>Continue in <strong><span id="t">${waitSeconds}</span>s</strong></p>
-<button id="btn">Continue</button>
+  <h2>${title}</h2>
+  <p>${message}</p>
+  <p>Continue in <strong><span id="t">${waitSeconds}</span>s</strong></p>
+  <button id="btn">Continue</button>
 </div>
 
 <script>
@@ -176,41 +200,60 @@ const timer=setInterval(()=>{
 </html>`;
 }
 
-/* ===================== FINAL PAGE WITH BUTTON ===================== */
-function finalPage({ waitSeconds, finalUrl, adSlot }) {
+/* ===================== FINAL PAGE ===================== */
+function finalPage({ waitSeconds, finalUrl }) {
   return `
 <!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Final Step</title>
+
+<!-- ✅ ADSTERRA POP SCRIPT -->
+<script src="https://pl28261218.effectivegatecpm.com/3f/b8/da/3fb8da7c494bf238f9dcbb169f654d71.js"></script>
+
 <style>
-body{margin:0;background:#f6f4ff;font-family:Arial;display:flex;align-items:center;justify-content:center;height:100vh;}
-.box{background:#fff;border-radius:18px;padding:26px;max-width:520px;width:92%;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,.08);}
-button{margin-top:18px;padding:12px 28px;border-radius:999px;border:none;background:#7A5CFF;color:white;font-weight:600;opacity:.35;cursor:not-allowed;}
-button.active{opacity:1;cursor:pointer;}
-#ad{margin:18px 0;padding:14px;border:1px solid #e6e3ff;border-radius:14px;min-height:120px;}
+body{
+  margin:0;
+  background:#f6f4ff;
+  font-family:Arial;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+}
+.box{
+  background:#fff;
+  border-radius:18px;
+  padding:26px;
+  max-width:520px;
+  width:92%;
+  text-align:center;
+  box-shadow:0 20px 40px rgba(0,0,0,.08);
+}
+button{
+  margin-top:18px;
+  padding:12px 28px;
+  border-radius:999px;
+  border:none;
+  background:#7A5CFF;
+  color:white;
+  font-weight:600;
+  opacity:.35;
+}
+button.active{
+  opacity:1;
+  cursor:pointer;
+}
 </style>
 </head>
 
 <body>
 <div class="box">
-<h2>Final Step</h2>
-<p>Your link is ready</p>
-
-<div id="ad">
-  <ins class="adsbygoogle"
-    style="display:block"
-    data-ad-client="${process.env.AD_CLIENT}"
-    data-ad-slot="${adSlot}">
-  </ins>
-</div>
-
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.AD_CLIENT}" crossorigin="anonymous"></script>
-<script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
-
-<p>Open in <strong><span id="t">${waitSeconds}</span>s</strong></p>
-<button id="btn">Open Original Link</button>
+  <h2>Final Step</h2>
+  <p>Your link is ready</p>
+  <p>Open in <strong><span id="t">${waitSeconds}</span>s</strong></p>
+  <button id="btn">Open Original Link</button>
 </div>
 
 <script>
@@ -228,7 +271,6 @@ const timer=setInterval(()=>{
   }
 },1000);
 </script>
-
 </body>
 </html>`;
 }

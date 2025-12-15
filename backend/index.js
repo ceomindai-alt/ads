@@ -15,57 +15,38 @@ connectDB(process.env.MONGO_URI);
 
 // middlewares
 
-
 app.use(
   helmet({
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
         "default-src": ["'self'"],
-
         "script-src": [
           "'self'",
           "'unsafe-inline'",
-          "'unsafe-eval'",
           "https://pagead2.googlesyndication.com",
           "https://googleads.g.doubleclick.net",
           "https://www.googletagservices.com"
         ],
-
-        // ✅ THIS IS THE MISSING PIECE
-        "script-src-elem": [
-          "'self'",
-          "'unsafe-inline'",
-          "https://pagead2.googlesyndication.com",
-          "https://googleads.g.doubleclick.net",
-          "https://www.googletagservices.com",
-          "https://ep2.adtrafficquality.google"
-        ],
-
         "frame-src": [
           "'self'",
           "https://googleads.g.doubleclick.net",
           "https://tpc.googlesyndication.com"
         ],
-
-        "img-src": [
-          "'self'",
-          "data:",
-          "https:",
-          "https://pagead2.googlesyndication.com",
-          "https://googleads.g.doubleclick.net"
-        ],
-
-        "connect-src": [
-          "'self'",
-          "https://pagead2.googlesyndication.com",
-          "https://googleads.g.doubleclick.net",
-          "https://ep2.adtrafficquality.google"
-        ]
+        "img-src": ["'self'", "data:", "https:"],
+        "connect-src": ["'self'", "https:"]
       }
     }
   })
 );
+app.use("/r", (req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;"
+  );
+  next();
+});
+
 
 
 app.use(express.json());

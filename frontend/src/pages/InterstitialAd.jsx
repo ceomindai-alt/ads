@@ -1,98 +1,113 @@
-// src/pages/InterstitialAd.jsx
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { FaClock, FaExternalLinkAlt, FaSpinner } from 'react-icons/fa';
-import axios from 'axios'; // Use raw axios for public, non-auth API
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { FaClock, FaExternalLinkAlt, FaSpinner } from "react-icons/fa";
+import axios from "axios";
 
 const InterstitialAd = () => {
   const { shortCode } = useParams();
   const [countdown, setCountdown] = useState(5);
   const [targetUrl, setTargetUrl] = useState(null);
   const [loading, setLoading] = useState(true);
+const script = document.createElement("script");
+script.src = "https://pl28261218.effectivegatecpm.com/3f/b8/da/3fb8da7c494bf238f9dcbb169f654d71.js";
+document.body.appendChild(script);
 
-  // 1. Fetch the long URL
+  /* ======================================================
+     LOAD ADSTERRA (STEP PAGE ONLY)
+  ====================================================== */
   useEffect(() => {
-    const fetchTargetUrl = async () => {
+    if (document.getElementById("adsterra-script")) return;
+
+    const script = document.createElement("script");
+    script.id = "adsterra-script";
+    script.type = "text/javascript";
+    script.src =
+      "https://pl28261218.effectivegatecpm.com/3f/b8/da/3fb8da7c494bf238f9dcbb169f654d71.js";
+    script.async = true;
+
+    document.body.appendChild(script);
+  }, []);
+
+  /* ======================================================
+     FETCH LONG URL
+  ====================================================== */
+  useEffect(() => {
+    const fetchTarget = async () => {
       try {
-        // NOTE: This assumes a public, non-authenticated endpoint like GET /api/resolve/:shortCode
-        // This endpoint is not in the list, so we will use a mock one and simulate the fetch.
-        // In a real scenario, this would hit the backend to get the long URL and log the click.
-        const res = await axios.get(`/api/resolve/${shortCode}`); 
-        setTargetUrl(res.data.longUrl); 
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching target URL:", error);
-        setTargetUrl('/404'); // Redirect to a 404 page on failure
+        const res = await axios.get(`/api/resolve/${shortCode}`);
+        setTargetUrl(res.data.longUrl);
+      } catch (err) {
+        console.error("Resolve failed", err);
+        setTargetUrl(null);
+      } finally {
         setLoading(false);
       }
     };
-    fetchTargetUrl();
+    fetchTarget();
   }, [shortCode]);
 
-  // 2. Countdown Timer Logic
+  /* ======================================================
+     COUNTDOWN
+  ====================================================== */
   useEffect(() => {
-    if (!targetUrl) return; // Wait for URL to be fetched
-
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
+    if (!targetUrl || countdown <= 0) return;
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
   }, [countdown, targetUrl]);
 
-  // 3. Handle Continue/Redirect
   const handleContinue = () => {
-    if (targetUrl) {
-      window.location.href = targetUrl;
-    }
+    if (targetUrl) window.location.href = targetUrl;
   };
 
   if (loading) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-            <FaSpinner className="animate-spin w-8 h-8 text-primary" />
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <FaSpinner className="animate-spin w-8 h-8 text-purple-600" />
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4 transition-colors duration-300">
-      <div className="w-full max-w-4xl">
-        {/* Top Ad Container */}
-        <div className="mb-6 p-4 h-32 md:h-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
-          [ Ad Container: PropellerAds / Adsterra 728x90 or 300x250 ]
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-3xl text-center">
+
+        {/* TOP ADSTERRA SLOT */}
+        <div className="mb-6 h-32 bg-white border rounded flex items-center justify-center text-gray-400">
+          Advertisement
         </div>
 
-        {/* Main Countdown Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 text-center border border-gray-200 dark:border-gray-700">
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-4">
-            Almost There!
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Please wait for the timer to finish before proceeding to your link.
+        {/* MAIN CARD */}
+        <div className="bg-white rounded-xl shadow p-8 border">
+          <h1 className="text-3xl font-bold mb-3">Please Wait</h1>
+          <p className="text-gray-600 mb-6">
+            Your link will be available shortly
           </p>
 
-          <div className="flex items-center justify-center mb-8">
-            <FaClock className="w-6 h-6 text-primary mr-2" />
-            <span className="text-4xl font-bold text-primary">{countdown}</span>
-            <span className="text-xl font-semibold text-gray-600 dark:text-gray-400 ml-1">seconds</span>
+          <div className="flex justify-center items-center mb-6">
+            <FaClock className="mr-2 text-purple-600" />
+            <span className="text-4xl font-bold">{countdown}</span>
+            <span className="ml-2 text-gray-500">seconds</span>
           </div>
-          
-          <Button 
-            onClick={handleContinue} 
-            disabled={countdown > 0} 
-            variant="secondary"
-            className="w-full max-w-xs mx-auto"
-            size="lg"
+
+          <button
+            onClick={handleContinue}
+            disabled={countdown > 0}
+            className={`px-6 py-3 rounded-lg text-white font-semibold transition ${
+              countdown > 0
+                ? "bg-purple-300 cursor-not-allowed"
+                : "bg-purple-600 hover:bg-purple-700"
+            }`}
           >
-            <FaExternalLinkAlt className="mr-2" />
-            {countdown > 0 ? `Please Wait (${countdown}s)` : 'Continue to Link'}
-          </Button>
+            <FaExternalLinkAlt className="inline mr-2" />
+            {countdown > 0 ? `Wait (${countdown}s)` : "Continue"}
+          </button>
         </div>
 
-        {/* Bottom Ad Container (optional) */}
-        <div className="mt-6 p-4 h-32 md:h-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
-          [ Ad Container: PropellerAds / Adsterra 300x250 or Native Banner ]
+        {/* BOTTOM ADSTERRA SLOT */}
+        <div className="mt-6 h-32 bg-white border rounded flex items-center justify-center text-gray-400">
+          Advertisement
         </div>
+
       </div>
     </div>
   );
