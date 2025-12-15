@@ -1,7 +1,7 @@
 // api.js
 import axios from 'axios';
 
-const API_ROOT = 'https://ads-2quj.onrender.com/api/';   // add /api/
+const API_ROOT = 'http://localhost:5000/api';   // add /api/
 
 const client = axios.create({ baseURL: API_ROOT });
 

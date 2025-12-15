@@ -1,37 +1,99 @@
+// src/pages/Login.jsx
 import React, { useState } from 'react';
-import client from '../api/api';
+import { Link, useNavigate } from 'react-router-dom';
+import Input from '../components/Input';
+import Button from '../components/Button';
+import { useAuth } from '../context/AuthContext';
 
-export default function Login({ setToken }) {
-  const [email,setEmail]=useState('');
-  const [password,setPassword]=useState('');
-  const [err,setErr]=useState(null);
+const Login = () => {
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const submit = async (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    try{
-      const res = await client.post('auth/login', { email, password });
-      localStorage.setItem('token', res.data.token);
-      setToken(res.data.token);
-      window.location = '/dashboard';
-    }catch(e){
-      setErr(e.response?.data?.message || 'Login failed');
+    setLoading(true);
+
+    const success = await login(formData.email, formData.password);
+
+    setLoading(false);
+
+    if (success) {
+      navigate('/dashboard', { replace: true });
     }
   };
 
   return (
-    <div className="container">
-      <div className="card max-w-md mx-auto">
-        <h2 className="text-2xl mb-2">Login</h2>
-        { err && <div style={{color:'#ff6b6b'}}>{err}</div> }
-        <form onSubmit={submit}>
-          <label>Email</label>
-          <input value={email} onChange={e=>setEmail(e.target.value)} />
-          <label>Password</label>
-          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} />
-          <button className="btn mt-3" type="submit">Login</button>
-        </form>
-        <p className="mt-3">New? <a href="/register" style={{color:'#9aa4ff'}}>Register</a></p>
-      </div>
+    <div className="p-8 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700/50">
+      <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white text-center mb-2">
+        Welcome Back
+      </h2>
+
+      <p className="text-center text-gray-500 dark:text-gray-400 mb-8">
+        Sign in to your dashboard
+      </p>
+
+      <form onSubmit={handleSubmit}>
+
+        {/* EMAIL INPUT */}
+        <Input
+          label="Email Address"
+          type="email"
+          name="email"
+          placeholder="your@email.com"
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
+
+        {/* PASSWORD INPUT WITH TOGGLE */}
+        <Input
+          label="Password"
+          type={isPasswordVisible ? "text" : "password"}
+          name="password"
+          placeholder="••••••••"
+          value={formData.password}
+          onChange={handleChange}
+          required
+          showPasswordToggle
+          isPasswordVisible={isPasswordVisible}
+          togglePasswordVisibility={() => setIsPasswordVisible(!isPasswordVisible)}
+        />
+
+        {/* FORGOT PASSWORD LINK */}
+        <div className="flex justify-end mb-6">
+          <Link
+            to="/forgot-password"
+            className="text-sm font-medium text-primary hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300"
+          >
+            Forgot Password?
+          </Link>
+        </div>
+
+        {/* LOGIN BUTTON */}
+        <Button type="submit" loading={loading} className="w-full">
+          Log In
+        </Button>
+      </form>
+
+      {/* SIGN UP LINK */}
+      <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+        Don't have an account?{" "}
+        <Link
+          to="/register"
+          className="font-medium text-primary hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300"
+        >
+          Sign Up
+        </Link>
+      </p>
     </div>
   );
-}
+};
+
+export default Login;

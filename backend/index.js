@@ -42,6 +42,10 @@ app.use('/api/links', require('./routes/links'));
 app.use('/r', require('./routes/redirect'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/withdraw', require('./routes/withdraw'));
+app.use('/api/user', require('./routes/user'));
+app.use("/api/earnings", require("./routes/earnings"));
+app.use("/api/referrals", require("./routes/referrals"));
+
 
 app.get('/', (req, res) => res.send('LinkVerse API running'));
 

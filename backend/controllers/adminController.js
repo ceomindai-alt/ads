@@ -1,3 +1,4 @@
+// controllers/adminController.js
 const Link = require('../models/Link');
 const Click = require('../models/Click');
 const User = require('../models/User');
@@ -26,7 +27,7 @@ exports.approveWithdrawal = async (req, res) => {
     await withdrawal.save();
     res.json({ withdrawal });
   } catch (err) {
-    console.error(err);
+    console.error('approveWithdrawal error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };

@@ -1,60 +1,89 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import Toast from './components/Toast';
+import ProtectedRoute from './utils/ProtectedRoute';
+
+// Layouts
+import AuthLayout from './layouts/AuthLayout';
+import DashboardLayout from './layouts/DashboardLayout';
+
+// Public Landing
+import Landing from "./pages/Landing";
+
+// Auth Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
+
+// User Pages
 import Dashboard from './pages/Dashboard';
-import CreateLink from './pages/CreateLink';
-import LinksList from './pages/LinkList';
-import Analytics from './pages/Analytics';
+import ShortenLink from './pages/ShortenLink';
 import Withdraw from './pages/Withdraw';
-import Navbar from './components/Navbar';
-import { setAuthToken } from './api/api';
-import ExternalRedirect from './pages/ExternalRedirect';
-import RedirectPage from './pages/RedirectPage';
+import Referrals from './pages/Referrals';
+import Settings from './pages/Settings';
 
-// Load token immediately at startup
-const savedToken = localStorage.getItem('token');
-if (savedToken) {
-  setAuthToken(savedToken);
-}
+// Admin Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminLinks from './pages/admin/AdminLinks';
+import AdminWithdrawals from './pages/admin/AdminWithdrawals';
+import AdminCPM from './pages/admin/AdminCPM';
 
-export default function App() {
-  const [token, setToken] = useState(savedToken);
+// Interstitial
+import InterstitialAd from './pages/InterstitialAd';
 
-  useEffect(() => {
-    setAuthToken(token);
-  }, [token]);
-
-  function PrivateRoute({ children }) {
-    return token ? children : <Navigate to="/login" replace />;
-  }
-
+const App = () => {
   return (
-    <>
-      <Navbar token={token} setToken={setToken} />
-      <div className="container mx-auto p-4">
+    <ThemeProvider>
+      <AuthProvider>
+
         <Routes>
 
-          {/* Auth Routes */}
-          <Route path="/" element={token ? <Navigate to="/dashboard" /> : <Navigate to="/register" />} />
-          <Route path="/login" element={<Login setToken={setToken} />} />
-          <Route path="/register" element={<Register setToken={setToken} />} />
+          {/* PUBLIC LANDING PAGE */}
+          <Route path="/" element={<Landing />} />
 
-          {/* Protected Routes */}
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/create" element={<PrivateRoute><CreateLink /></PrivateRoute>} />
-          <Route path="/links" element={<PrivateRoute><LinksList /></PrivateRoute>} />
-          <Route path="/analytics/:id" element={<PrivateRoute><Analytics /></PrivateRoute>} />
-          <Route path="/withdraw" element={<PrivateRoute><Withdraw /></PrivateRoute>} />
+          {/* PUBLIC AD PAGE */}
+          <Route path="/ad/:shortCode" element={<InterstitialAd />} />
 
-          {/* Redirect System */}
-          <Route path="/r/:code" element={<RedirectPage />} />
-          <Route path="/r/*" element={<ExternalRedirect />} />
+          {/* AUTH PAGES */}
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+          </Route>
 
-          {/* Catch all */}
+          {/* USER PROTECTED ROUTES */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<DashboardLayout />}>
+
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/shorten" element={<ShortenLink />} />
+              <Route path="/withdraw" element={<Withdraw />} />
+              <Route path="/referrals" element={<Referrals />} />
+              <Route path="/settings" element={<Settings />} />
+
+              {/* ADMIN PROTECTED ROUTES */}
+              <Route element={<ProtectedRoute adminOnly />}>
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/links" element={<AdminLinks />} />
+                <Route path="/admin/withdrawals" element={<AdminWithdrawals />} />
+                <Route path="/admin/cpm" element={<AdminCPM />} />
+              </Route>
+
+            </Route>
+          </Route>
+
+          {/* FALLBACK */}
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
-      </div>
-    </>
+
+        <Toast />
+
+      </AuthProvider>
+    </ThemeProvider>
   );
-}
+};
+
+export default App;

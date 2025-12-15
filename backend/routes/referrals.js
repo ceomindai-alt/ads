@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/authMiddleware");
-const earningsController = require("../controllers/earningsController");
+const referralController = require("../controllers/referralController");
 
-router.get("/", auth, earningsController.getEarnings);
+router.get("/me", auth, referralController.getMyReferrals);
 
 module.exports = router;

@@ -1,178 +1,278 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import client from "../api/api";
+import axiosInstance from "../utils/axiosInstance";
 
 export default function Withdraw() {
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState("upi");
-  const [balance, setBalance] = useState(0);
-  const [msg, setMsg] = useState(null);
+  const [method, setMethod] = useState("UPI");
 
-  // Dynamic Fields
   const [upiId, setUpiId] = useState("");
   const [accNumber, setAccNumber] = useState("");
   const [ifsc, setIfsc] = useState("");
-  const [accHolder, setAccHolder] = useState("");
+  const [holderName, setHolderName] = useState("");
+
+  // PAYPAL
+  const [paypalEmail, setPaypalEmail] = useState("");
+  const [paypalBankName, setPaypalBankName] = useState("");
+  const [paypalRoutingNumber, setPaypalRoutingNumber] = useState("");
+  const [paypalAccountNumber, setPaypalAccountNumber] = useState("");
+
+  // BALANCE (FROM DB)
+  const [balance, setBalance] = useState(0);
+
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      const me = await client.get("/auth/me");
-      setBalance(me.data.walletBalance);
-    }
-    load();
+    const loadData = async () => {
+      try {
+        /* ----------------------------------------
+           EXISTING: Withdrawal History
+        ---------------------------------------- */
+        const res = await axiosInstance.get("/withdraw/history");
+        setHistory(res.data || []);
+
+        /* ----------------------------------------
+           EXISTING: Payment Details
+        ---------------------------------------- */
+        const profile = await axiosInstance.get("/user/payment-details");
+        if (profile.data) {
+          setUpiId(profile.data.upiId || "");
+          setAccNumber(profile.data.accNumber || "");
+          setIfsc(profile.data.ifsc || "");
+          setHolderName(profile.data.holderName || "");
+
+          setPaypalEmail(profile.data.paypalEmail || "");
+          setPaypalBankName(profile.data.paypalBankName || "");
+          setPaypalRoutingNumber(profile.data.paypalRoutingNumber || "");
+          setPaypalAccountNumber(profile.data.paypalAccountNumber || "");
+        }
+
+        /* ----------------------------------------
+           ✅ OPTION 1 FIX:
+           SYNC WALLET FROM DASHBOARD EARNINGS
+           SINGLE SOURCE OF TRUTH
+        ---------------------------------------- */
+        const earnings = await axiosInstance.get("/earnings");
+        setBalance(earnings.data.walletBalance || 0);
+
+      } catch (err) {
+        console.error("Load error", err);
+        setBalance(0); // safety
+      }
+    };
+
+    loadData();
   }, []);
 
-  const submit = async (e) => {
-    e.preventDefault();
-
-    if (!amount || amount <= 0) {
-      return setMsg({ type: "error", text: "Enter valid amount" });
+  const submitRequest = async () => {
+    if (!amount || Number(amount) <= 0) {
+      alert("Enter a valid withdrawal amount");
+      return;
     }
 
-    if (method === "upi" && !upiId) {
-      return setMsg({ type: "error", text: "Enter UPI ID" });
+    if (Number(amount) > balance) {
+      alert("Withdrawal amount exceeds withdrawable balance");
+      return;
     }
 
-    if (method === "bank" && (!accNumber || !ifsc || !accHolder)) {
-      return setMsg({
-        type: "error",
-        text: "All bank details are required",
-      });
-    }
-
+    setLoading(true);
     try {
-      const payload = { amount, method };
-
-      if (method === "upi") payload.upiId = upiId;
-      if (method === "bank") {
-        payload.accNumber = accNumber;
-        payload.ifsc = ifsc;
-        payload.accHolder = accHolder;
-      }
-
-      await client.post("/withdraw", payload);
-
-      setMsg({ type: "success", text: "Withdrawal request submitted" });
-    } catch (e) {
-      setMsg({
-        type: "error",
-        text: e.response?.data?.message || "Failed to submit",
+      await axiosInstance.post("/withdraw/request", {
+        amount,
+        method,
+        upiId,
+        accNumber,
+        ifsc,
+        holderName,
+        paypalEmail,
+        paypalBankName,
+        paypalRoutingNumber,
+        paypalAccountNumber
       });
+
+      alert("Withdrawal request submitted!");
+      setAmount("");
+
+      /* ----------------------------------------
+         ✅ RE-SYNC FROM DASHBOARD AFTER WITHDRAW
+      ---------------------------------------- */
+      const earnings = await axiosInstance.get("/earnings");
+      setBalance(earnings.data.walletBalance || 0);
+
+      const updated = await axiosInstance.get("/withdraw/history");
+      setHistory(updated.data);
+
+    } catch (err) {
+      alert("Failed to submit request");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-10 bg-gray-900 p-6 rounded-xl shadow-lg">
-      
-      {/* Back Button */}
-      <Link to="/dashboard">
-        <button className="mb-4 bg-gray-700 px-4 py-2 rounded text-white hover:bg-gray-600">
-          ← Back
-        </button>
-      </Link>
+    <div className="min-h-screen p-4 sm:p-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+      <div className="flex justify-center">
+        <div className="w-full max-w-3xl">
 
-      <h2 className="text-xl font-semibold text-white mb-4">Withdraw Funds</h2>
+          <h2 className="text-3xl font-bold text-purple-700 mb-6 text-center">
+            Withdraw Earnings
+          </h2>
 
-      <p className="text-gray-300 mb-4">
-        Available Balance: <b className="text-white">₹{balance}</b>
-      </p>
-
-      {msg && (
-        <div
-          className={`p-3 mb-4 rounded ${
-            msg.type === "error" ? "bg-red-500" : "bg-green-500"
-          } text-black`}
-        >
-          {msg.text}
-        </div>
-      )}
-
-      <form onSubmit={submit} className="space-y-4">
-
-        {/* Amount */}
-        <div>
-          <label className="text-gray-300 block mb-1">Amount</label>
-          <input
-            className="w-full p-2 rounded bg-gray-800 text-white outline-none"
-            placeholder="Enter amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-        </div>
-
-        {/* Method */}
-        <div>
-          <label className="text-gray-300 block mb-1">Payout Method</label>
-          <select
-            className="w-full p-2 rounded bg-gray-800 text-white outline-none"
-            value={method}
-            onChange={(e) => setMethod(e.target.value)}
-          >
-            <option value="upi">UPI</option>
-            <option value="bank">Bank Transfer</option>
-          </select>
-        </div>
-
-        {/* UPI DETAILS */}
-        {method === "upi" && (
-          <div>
-            <label className="text-gray-300 block mb-1">UPI ID</label>
-            <input
-              className="w-full p-2 rounded bg-gray-800 text-white outline-none"
-              placeholder="example@upi"
-              value={upiId}
-              onChange={(e) => setUpiId(e.target.value)}
-            />
+          {/* BALANCE CARD */}
+          <div className="mb-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 text-white shadow">
+            <p className="text-sm font-medium opacity-90">
+              Withdrawable Balance 
+            </p>
+            <p className="text-4xl font-bold mt-1">
+              ₹{Number(balance).toFixed(2)}
+            </p>
+            <p className="text-xs opacity-80 mt-2">
+              This is the amount you can withdraw.
+            </p>
           </div>
-        )}
 
-        {/* BANK DETAILS */}
-        {method === "bank" && (
-          <>
-            <div>
-              <label className="text-gray-300 block mb-1">
-                Account Number
+          {/* WITHDRAW CARD */}
+          <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-6 border border-gray-200 mb-10">
+            <h3 className="text-xl font-semibold mb-4">Request Withdrawal</h3>
+
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">
+                Withdraw Amount (₹)
               </label>
               <input
-                className="w-full p-2 rounded bg-gray-800 text-white outline-none"
-                placeholder="Enter account number"
-                value={accNumber}
-                onChange={(e) => setAccNumber(e.target.value)}
+                type="number"
+                min="0"
+                className="w-full p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
               />
             </div>
 
-            <div>
-              <label className="text-gray-300 block mb-1">IFSC Code</label>
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">Payment Method</label>
+              <select
+                className="w-full p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+              >
+                <option>UPI</option>
+                <option>Bank</option>
+                <option>PayPal</option>
+              </select>
+            </div>
+
+            {method === "UPI" && (
               <input
-                className="w-full p-2 rounded bg-gray-800 text-white outline-none"
-                placeholder="Enter IFSC"
-                value={ifsc}
-                onChange={(e) => setIfsc(e.target.value)}
+                placeholder="UPI ID"
+                className="w-full p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600 mb-4"
+                value={upiId}
+                onChange={(e) => setUpiId(e.target.value)}
               />
-            </div>
+            )}
 
-            <div>
-              <label className="text-gray-300 block mb-1">
-                Account Holder Name
-              </label>
-              <input
-                className="w-full p-2 rounded bg-gray-800 text-white outline-none"
-                placeholder="Enter account holder name"
-                value={accHolder}
-                onChange={(e) => setAccHolder(e.target.value)}
-              />
-            </div>
-          </>
-        )}
+            {method === "Bank" && (
+              <div className="grid gap-4 mb-4">
+                <input
+                  placeholder="Account Holder Name"
+                  className="w-full p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                  value={holderName}
+                  onChange={(e) => setHolderName(e.target.value)}
+                />
+                <input
+                  placeholder="Account Number"
+                  className="w-full p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                  value={accNumber}
+                  onChange={(e) => setAccNumber(e.target.value)}
+                />
+                <input
+                  placeholder="IFSC Code"
+                  className="w-full p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                  value={ifsc}
+                  onChange={(e) => setIfsc(e.target.value.toUpperCase())}
+                />
+              </div>
+            )}
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded mt-4"
-        >
-          Submit Withdrawal
-        </button>
-      </form>
+            {method === "PayPal" && (
+              <div className="grid gap-4 mb-4">
+                <input
+                  placeholder="PayPal Email"
+                  className="w-full p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                  value={paypalEmail}
+                  onChange={(e) => setPaypalEmail(e.target.value)}
+                />
+                <input
+                  placeholder="Account Holder Name (must match PayPal)"
+                  className="w-full p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                  value={holderName}
+                  onChange={(e) => setHolderName(e.target.value)}
+                />
+                <input
+                  placeholder="Bank Name"
+                  className="w-full p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                  value={paypalBankName}
+                  onChange={(e) => setPaypalBankName(e.target.value)}
+                />
+                <input
+                  placeholder="Bank Account Number"
+                  className="w-full p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                  value={paypalAccountNumber}
+                  onChange={(e) => setPaypalAccountNumber(e.target.value)}
+                />
+                <input
+                  placeholder="Routing / Sort / Branch Code"
+                  className="w-full p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600"
+                  value={paypalRoutingNumber}
+                  onChange={(e) => setPaypalRoutingNumber(e.target.value)}
+                />
+              </div>
+            )}
+
+            <button
+              onClick={submitRequest}
+              disabled={loading}
+              className="mt-4 px-6 py-3 w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold"
+            >
+              {loading ? "Submitting..." : "Submit Withdrawal"}
+            </button>
+          </div>
+
+          {/* HISTORY */}
+          <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-6 border border-gray-200">
+            <h3 className="text-xl font-bold mb-4">Withdrawal History</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="p-3 text-left">Amount</th>
+                    <th className="p-3 text-left">Method</th>
+                    <th className="p-3 text-left">Status</th>
+                    <th className="p-3 text-left">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="p-4 text-center text-gray-500">
+                        No withdrawal history
+                      </td>
+                    </tr>
+                  )}
+                  {history.map((row, i) => (
+                    <tr key={i} className="border-b">
+                      <td className="p-3">₹{row.amount}</td>
+                      <td className="p-3">{row.method}</td>
+                      <td className="p-3">{row.status}</td>
+                      <td className="p-3">{row.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }

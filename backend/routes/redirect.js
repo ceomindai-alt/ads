@@ -4,11 +4,11 @@ const router = express.Router();
 const {
   premiumStep1,
   premiumStep2,
-  finalRedirect
+  premiumStep3
 } = require("../controllers/redirectController");
 
-router.get("/:code", premiumStep1);
+router.get("/:code/step3", premiumStep3);
 router.get("/:code/step2", premiumStep2);
-router.get("/final/:code", finalRedirect);
+router.get("/:code", premiumStep1);
 
 module.exports = router;
