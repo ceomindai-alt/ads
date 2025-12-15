@@ -15,12 +15,26 @@ connectDB(process.env.MONGO_URI);
 
 // middlewares
 
+const helmet = require("helmet");
+
 app.use(
   helmet({
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
+        "default-src": ["'self'"],
+
         "script-src": [
+          "'self'",
+          "'unsafe-inline'",
+          "'unsafe-eval'",
+          "https://pagead2.googlesyndication.com",
+          "https://googleads.g.doubleclick.net",
+          "https://www.googletagservices.com"
+        ],
+
+        // ✅ THIS IS THE MISSING PIECE
+        "script-src-elem": [
           "'self'",
           "'unsafe-inline'",
           "https://pagead2.googlesyndication.com",
@@ -28,27 +42,32 @@ app.use(
           "https://www.googletagservices.com",
           "https://ep2.adtrafficquality.google"
         ],
+
         "frame-src": [
           "'self'",
           "https://googleads.g.doubleclick.net",
           "https://tpc.googlesyndication.com"
         ],
+
         "img-src": [
           "'self'",
           "data:",
           "https:",
-          "https://googleads.g.doubleclick.net",
-          "https://pagead2.googlesyndication.com"
+          "https://pagead2.googlesyndication.com",
+          "https://googleads.g.doubleclick.net"
         ],
+
         "connect-src": [
           "'self'",
+          "https://pagead2.googlesyndication.com",
           "https://googleads.g.doubleclick.net",
-          "https://pagead2.googlesyndication.com"
+          "https://ep2.adtrafficquality.google"
         ]
       }
     }
   })
 );
+
 
 app.use(express.json());
 app.use(morgan('dev'));
