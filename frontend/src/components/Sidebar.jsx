@@ -67,7 +67,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <Link to="/" className="text-2xl font-bold text-primary">
-            LinkShorty
+            LinkPay
           </Link>
 
           <button

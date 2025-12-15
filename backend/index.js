@@ -5,6 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -47,6 +48,15 @@ app.use("/api/earnings", require("./routes/earnings"));
 app.use("/api/referrals", require("./routes/referrals"));
 
 
-app.get('/', (req, res) => res.send('LinkVerse API running'));
+app.get('/', (req, res) => res.send('LinkPay API running'));
+
+
+const frontendPath = path.join(__dirname, "frontend/dist");
+app.use(express.static(frontendPath));
+
+// ⚠️ IMPORTANT: use app.use, NOT app.get("*")
+app.use((req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
 
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));

@@ -23,7 +23,7 @@ const Navbar = ({ setSidebarOpen }) => {
 
         {/* Title */}
         <h1 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
-          Dashboard
+          
         </h1>
 
         {/* Right Section */}
