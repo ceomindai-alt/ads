@@ -9,10 +9,11 @@ const withdrawSchema = new mongoose.Schema({
 
   // ALWAYS STORED IN USD
   amount: {
-    type: Number,
-    required: true,
-    min: 1
-  },
+  type: Number,
+  required: true,
+  min: 0.01 // allow 1 cent
+}
+,
 
   // upi | bank | paypal
   method: {
