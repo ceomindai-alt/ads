@@ -22,7 +22,7 @@ const UserSchema = new mongoose.Schema(
       required: true
     },
 
-    // 🔒 OTP-based reset (NEW)
+    // 🔒 OTP-based reset
     resetOtpHash: {
       type: String,
       default: null
@@ -33,7 +33,7 @@ const UserSchema = new mongoose.Schema(
       default: null
     },
 
-    // 🔁 Legacy token reset (OPTIONAL – can remove later)
+    // 🔁 Legacy token reset
     resetPasswordToken: {
       type: String,
       default: null
@@ -80,9 +80,32 @@ const UserSchema = new mongoose.Schema(
        WALLET
     ========================= */
 
+    // ✅ AVAILABLE BALANCE (can withdraw)
     walletBalance: {
       type: Number,
       default: 0
+    },
+
+    // ✅ LOCKED BALANCE (during pending withdrawal)
+    lockedBalance: {
+      type: Number,
+      default: 0
+    },
+
+    /* =========================
+       WITHDRAWAL CONTROL (NEW)
+    ========================= */
+
+    // Prevent multiple withdrawals
+    hasPendingWithdrawal: {
+      type: Boolean,
+      default: false
+    },
+
+    // Last withdrawal timestamp (rate limiting)
+    lastWithdrawalAt: {
+      type: Date,
+      default: null
     },
 
     /* =========================

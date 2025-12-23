@@ -3,14 +3,14 @@ const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS
   }
 });
 
-module.exports = async (to, subject, text) => {
-  await transporter.sendMail({
-    from: `"LinkPay" <${process.env.EMAIL_USER}>`,
+module.exports = function sendEmail(to, subject, text) {
+  transporter.sendMail({
+    from: "no-reply@yourplatform.com",
     to,
     subject,
     text

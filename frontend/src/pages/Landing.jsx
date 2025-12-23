@@ -244,40 +244,52 @@ const LandingPage = () => {
       </section>
 
       {/* COUNTRY EARNINGS TABLE */}
-      <section className="py-16 px-4 max-w-6xl mx-auto">
-        <h3 className="text-center text-3xl font-bold mb-6">Top 20 Country Earnings</h3>
+      {/* COUNTRY EARNINGS TABLE */}
+<section className="py-16 px-4 max-w-6xl mx-auto">
+  <h3 className="text-center text-3xl font-bold mb-6">
+    Top 20 Country Earnings
+  </h3>
 
-        <p className="text-center text-gray-600 mb-6">
-          Estimated earnings per 1000 clicks (country-wise payout ranges).
-        </p>
+  <p className="text-center text-gray-600 mb-6">
+    Estimated earnings per 1000 clicks (country-wise payout ranges).
+  </p>
 
-        <div className="overflow-x-auto border rounded-xl">
-          <table className="w-full text-left min-w-[700px]">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="p-3">Country</th>
-                <th className="p-3">Earnings per 1000 Clicks</th>
-              </tr>
-            </thead>
+  {/* ✅ DESKTOP SIDE GAP ADDED */}
+  <div className="border rounded-xl px-3 md:px-8 lg:px-12">
+    <table className="w-full text-left">
+      <thead>
+        <tr className="bg-gray-100">
+          <th className="p-3">Country</th>
+          <th className="p-3 md:text-right">
+            Earnings per 1000 Clicks
+          </th>
+        </tr>
+      </thead>
 
-            <tbody>
-              {countries.map((c, i) => (
-                <tr key={i} className="border-t">
-                  <td className="p-3 flex items-center gap-2">
-                    <ReactCountryFlag countryCode={c.code} svg style={{ fontSize: "1.5em" }} />
-                    {c.name}
-                  </td>
-                  <td className="p-3">
-                    {c.currency}{c.range[0]} – {c.currency}{c.range[1]}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <tbody>
+        {countries.map((c, i) => (
+          <tr key={i} className="border-t">
+            <td className="p-3 flex items-center gap-2">
+              <ReactCountryFlag
+                countryCode={c.code}
+                svg
+                style={{ fontSize: "1.5em" }}
+              />
+              {c.name}
+            </td>
 
-        <LiveWithdrawFeed />
-      </section>
+            <td className="p-3 md:text-right font-semibold">
+              {c.currency}{c.range[0]} – {c.currency}{c.range[1]}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <LiveWithdrawFeed />
+</section>
+
 
       {/* TESTIMONIALS */}
       <section className="py-16 px-4 bg-gray-50">

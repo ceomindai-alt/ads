@@ -2,7 +2,7 @@ const Withdraw = require("../models/Withdraw");
 const User = require("../models/User");
 
 /* ======================================================
-   CREATE WITHDRAW REQUEST
+   CREATE WITHDRAW REQUEST (USER)
 ====================================================== */
 exports.createWithdraw = async (req, res) => {
   try {
@@ -19,7 +19,7 @@ exports.createWithdraw = async (req, res) => {
       paypalAccountNumber
     } = req.body;
 
-    // 🔑 normalize method (CRITICAL FIX)
+    // Normalize method
     method = method?.toLowerCase();
 
     if (!["upi", "bank", "paypal"].includes(method)) {
@@ -28,6 +28,15 @@ exports.createWithdraw = async (req, res) => {
 
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    /* =========================
+       ONE PENDING WITHDRAWAL ONLY
+    ========================= */
+    if (user.hasPendingWithdrawal) {
+      return res
+        .status(400)
+        .json({ message: "You already have a pending withdrawal" });
+    }
 
     const numericAmount = parseFloat(amount);
     if (!numericAmount || numericAmount <= 0) {
@@ -38,14 +47,13 @@ exports.createWithdraw = async (req, res) => {
       return res.status(400).json({ message: "Insufficient balance" });
     }
 
-    /* ======================================================
+    /* =========================
        VALIDATE METHOD-SPECIFIC DETAILS
-    ====================================================== */
+    ========================= */
     if (method === "upi") {
       if (!upiId) {
         return res.status(400).json({ message: "UPI ID required" });
       }
-      user.upiId = upiId;
     }
 
     if (method === "bank") {
@@ -54,37 +62,28 @@ exports.createWithdraw = async (req, res) => {
           .status(400)
           .json({ message: "Complete bank details required" });
       }
-      user.accNumber = accNumber;
-      user.ifsc = ifsc;
-      user.holderName = holderName;
     }
 
     if (method === "paypal") {
       if (!paypalEmail) {
-        return res
-          .status(400)
-          .json({ message: "PayPal email required" });
+        return res.status(400).json({ message: "PayPal email required" });
       }
-      user.paypalEmail = paypalEmail;
-      user.paypalBankName = paypalBankName || "";
-      user.paypalRoutingNumber = paypalRoutingNumber || "";
-      user.paypalAccountNumber = paypalAccountNumber || "";
-      if (holderName) user.holderName = holderName;
     }
 
-    /* ======================================================
-       DEDUCT BALANCE IMMEDIATELY
-    ====================================================== */
-    user.walletBalance = parseFloat(
-      (user.walletBalance - numericAmount).toFixed(4)
-    );
+    /* =========================
+       LOCK BALANCE (CRITICAL FIX)
+    ========================= */
+    user.walletBalance = +(user.walletBalance - numericAmount).toFixed(4);
+    user.lockedBalance = +(user.lockedBalance + numericAmount).toFixed(4);
+    user.hasPendingWithdrawal = true;
+    user.lastWithdrawalAt = new Date();
     await user.save();
 
-    /* ======================================================
+    /* =========================
        CREATE WITHDRAW RECORD
-    ====================================================== */
+    ========================= */
     const w = new Withdraw({
-      user: req.user._id,
+      user: user._id,
       amount: numericAmount,
       method,
 
@@ -94,13 +93,13 @@ exports.createWithdraw = async (req, res) => {
       // BANK
       accNumber: method === "bank" ? accNumber : "",
       ifsc: method === "bank" ? ifsc : "",
-      holderName: method === "bank" ? holderName : "",
+      holderName: holderName || "",
 
       // PAYPAL
       paypalEmail: method === "paypal" ? paypalEmail : "",
-      paypalBankName: method === "paypal" ? paypalBankName || "" : "",
-      paypalRoutingNumber: method === "paypal" ? paypalRoutingNumber || "" : "",
-      paypalAccountNumber: method === "paypal" ? paypalAccountNumber || "" : ""
+      paypalBankName: paypalBankName || "",
+      paypalRoutingNumber: paypalRoutingNumber || "",
+      paypalAccountNumber: paypalAccountNumber || ""
     });
 
     await w.save();
@@ -121,8 +120,9 @@ exports.createWithdraw = async (req, res) => {
 ====================================================== */
 exports.userHistory = async (req, res) => {
   try {
-    const list = await Withdraw.find({ user: req.user._id })
-      .sort({ requestedAt: -1 });
+    const list = await Withdraw.find({ user: req.user._id }).sort({
+      requestedAt: -1
+    });
 
     return res.json(list);
   } catch (err) {
@@ -137,7 +137,8 @@ exports.userHistory = async (req, res) => {
 exports.listWithdrawals = async (req, res) => {
   try {
     const list = await Withdraw.find()
-      .populate("user", "username email walletBalance");
+      .populate("user", "username email walletBalance lockedBalance")
+      .sort({ requestedAt: -1 });
 
     return res.json(list);
   } catch (err) {
@@ -147,19 +148,20 @@ exports.listWithdrawals = async (req, res) => {
 };
 
 /* ======================================================
-   ADMIN: APPROVE WITHDRAW
+   ADMIN: APPROVE WITHDRAW (NO MONEY MOVE)
 ====================================================== */
 exports.approveWithdraw = async (req, res) => {
   try {
     const w = await Withdraw.findById(req.params.id);
     if (!w) return res.status(404).json({ message: "Not found" });
 
-    if (w.status === "processed") {
-      return res.status(400).json({ message: "Already processed" });
+    if (w.status !== "pending") {
+      return res.status(400).json({ message: "Invalid withdrawal status" });
     }
 
-    w.status = "processed";
-    w.processedAt = new Date();
+    w.status = "approved";
+    w.admin = req.user._id;
+    w.approvedAt = new Date();
     await w.save();
 
     return res.json({ success: true, message: "Withdrawal approved" });
@@ -170,26 +172,65 @@ exports.approveWithdraw = async (req, res) => {
 };
 
 /* ======================================================
-   ADMIN: REJECT WITHDRAW (REFUND)
+   ADMIN: MARK AS PAID (FINAL STEP)
+====================================================== */
+exports.markAsPaid = async (req, res) => {
+  try {
+    const { transactionRef } = req.body;
+
+    if (!transactionRef) {
+      return res
+        .status(400)
+        .json({ message: "Transaction reference required" });
+    }
+
+    const w = await Withdraw.findById(req.params.id);
+    if (!w) return res.status(404).json({ message: "Not found" });
+
+    if (w.status !== "approved") {
+      return res.status(400).json({ message: "Withdrawal not approved" });
+    }
+
+    const user = await User.findById(w.user);
+
+    user.lockedBalance = +(user.lockedBalance - w.amount).toFixed(4);
+    user.hasPendingWithdrawal = false;
+    await user.save();
+
+    w.status = "paid";
+    w.transactionRef = transactionRef;
+    w.processedAt = new Date();
+    await w.save();
+
+    return res.json({ success: true, message: "Payment marked as paid" });
+  } catch (err) {
+    console.error("markAsPaid error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+/* ======================================================
+   ADMIN: REJECT WITHDRAW (REFUND SAFELY)
 ====================================================== */
 exports.rejectWithdraw = async (req, res) => {
   try {
     const w = await Withdraw.findById(req.params.id);
     if (!w) return res.status(404).json({ message: "Not found" });
 
-    if (w.status === "rejected") {
-      return res.status(400).json({ message: "Already rejected" });
+    if (["paid", "rejected"].includes(w.status)) {
+      return res.status(400).json({ message: "Cannot reject this withdrawal" });
     }
 
     const user = await User.findById(w.user);
-    if (user) {
-      user.walletBalance = parseFloat(
-        (user.walletBalance + w.amount).toFixed(4)
-      );
-      await user.save();
-    }
+
+    user.walletBalance = +(user.walletBalance + w.amount).toFixed(4);
+    user.lockedBalance = +(user.lockedBalance - w.amount).toFixed(4);
+    user.hasPendingWithdrawal = false;
+    await user.save();
 
     w.status = "rejected";
+    w.admin = req.user._id;
+    w.adminNote = req.body.reason || "";
     w.processedAt = new Date();
     await w.save();
 

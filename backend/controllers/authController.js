@@ -70,7 +70,7 @@ exports.register = async (req, res) => {
     });
   } catch (err) {
     console.error("Register error:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -113,7 +113,7 @@ exports.login = async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -122,7 +122,9 @@ exports.login = async (req, res) => {
 ====================================================== */
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-passwordHash");
+    const user = await User.findById(req.user.id).select(
+      "-passwordHash -resetOtpHash -resetOtpExpires"
+    );
     return res.json(user);
   } catch (err) {
     console.error("Get Me error:", err);
@@ -131,7 +133,7 @@ exports.getMe = async (req, res) => {
 };
 
 /* ======================================================
-   CHANGE PASSWORD (LOGGED-IN USER)
+   CHANGE PASSWORD
 ====================================================== */
 exports.changePassword = async (req, res) => {
   try {
@@ -164,12 +166,12 @@ exports.changePassword = async (req, res) => {
     return res.json({ message: "Password changed successfully" });
   } catch (err) {
     console.error("Change password error:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
 /* ======================================================
-   FORGOT PASSWORD (SEND 4-DIGIT OTP)
+   FORGOT PASSWORD (OTP – PRIMARY FLOW)
 ====================================================== */
 exports.forgotPasswordOtp = async (req, res) => {
   try {
@@ -183,10 +185,10 @@ exports.forgotPasswordOtp = async (req, res) => {
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
     user.resetOtpHash = await bcrypt.hash(otp, 10);
-    user.resetOtpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    user.resetOtpExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    // TODO: send email via Nodemailer
+    // TODO: send via Nodemailer
     console.log("OTP:", otp);
 
     return res.json({
@@ -195,7 +197,7 @@ exports.forgotPasswordOtp = async (req, res) => {
     });
   } catch (err) {
     console.error("Forgot OTP error:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -206,7 +208,7 @@ exports.resetPasswordWithOtp = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
 
-    if (!otp || !newPassword) {
+    if (!email || !otp || !newPassword) {
       return res.status(400).json({ message: "All fields required" });
     }
 
@@ -235,7 +237,6 @@ exports.resetPasswordWithOtp = async (req, res) => {
     user.passwordHash = await bcrypt.hash(newPassword, 10);
     user.resetOtpHash = null;
     user.resetOtpExpires = null;
-
     await user.save();
 
     return res.json({
@@ -244,77 +245,6 @@ exports.resetPasswordWithOtp = async (req, res) => {
     });
   } catch (err) {
     console.error("Reset OTP error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-/* ======================================================
-   FORGOT PASSWORD (RESET LINK – LEGACY, KEPT)
-====================================================== */
-exports.forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    const user = await User.findOne({ email });
-    if (!user || user.accountStatus === "deleted") {
-      return res.json({ success: true });
-    }
-
-    const resetToken = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "15m" }
-    );
-
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-
-    console.log("RESET LINK:", resetLink);
-
-    return res.json({
-      success: true,
-      message: "Password reset link sent"
-    });
-  } catch (err) {
-    console.error("Forgot password error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-/* ======================================================
-   RESET PASSWORD (RESET LINK)
-====================================================== */
-exports.resetPassword = async (req, res) => {
-  try {
-    const { token } = req.params;
-    const { newPassword } = req.body;
-
-    if (!newPassword) {
-      return res.status(400).json({ message: "Password required" });
-    }
-
-    if (!isStrongPassword(newPassword)) {
-      return res.status(400).json({
-        message:
-          "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol"
-      });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
-
-    if (!user || user.accountStatus === "deleted") {
-      return res.status(400).json({ message: "Invalid token" });
-    }
-
-    user.passwordHash = await bcrypt.hash(newPassword, 10);
-    await user.save();
-
-    return res.json({
-      success: true,
-      message: "Password reset successful"
-    });
-  } catch (err) {
-    console.error("Reset password error:", err);
-    res.status(400).json({ message: "Invalid or expired token" });
+    return res.status(500).json({ message: "Server error" });
   }
 };

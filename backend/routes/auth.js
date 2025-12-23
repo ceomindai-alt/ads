@@ -8,8 +8,8 @@ const authController = require("../controllers/authController");
 router.post("/register", authController.register);
 router.post("/login", authController.login);
 
-// OTP FLOW
-router.post("/forgot-password", authController.forgotPassword); // send OTP
+// OTP FLOW (FIXED)
+router.post("/forgot-password", authController.forgotPasswordOtp); // send OTP
 router.post("/reset-password", authController.resetPasswordWithOtp); // verify OTP + reset
 
 // PROTECTED

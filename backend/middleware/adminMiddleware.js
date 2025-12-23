@@ -1,6 +1,11 @@
-module.exports = function(req, res, next) {
-  if (!req.user || req.user.accountType !== 'admin') {
-    return res.status(403).json({ message: 'Admin required' });
+module.exports = function adminMiddleware(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
+
+  if (req.user.accountType !== "admin") {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+
   next();
-}
+};

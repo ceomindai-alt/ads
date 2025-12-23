@@ -1,17 +1,35 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import LoadingSpinner from '../components/LoadingSpinner';
+
+import React from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const ProtectedRoute = ({ adminOnly = false }) => {
   const { isAuthenticated, isLoading, isAdmin } = useAuth();
+  const location = useLocation();
 
-  if (isLoading) return <LoadingSpinner fullScreen />;
+  // Wait until auth state is resolved
+  if (isLoading) {
+    return <LoadingSpinner fullScreen />;
+  }
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // Not logged in → login
+  if (!isAuthenticated) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location }}
+      />
+    );
+  }
 
-  if (adminOnly && !isAdmin) return <Navigate to="/dashboard" replace />;
+  // Logged in but not admin → user dashboard
+  if (adminOnly && !isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
+  // Authorized
   return <Outlet />;
 };
 

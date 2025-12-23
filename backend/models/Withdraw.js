@@ -9,71 +9,91 @@ const withdrawSchema = new mongoose.Schema({
 
   // ALWAYS STORED IN USD
   amount: {
-  type: Number,
-  required: true,
-  min: 0.01 // allow 1 cent
-}
-,
+    type: Number,
+    required: true,
+    min: 0.01
+  },
 
-  // upi | bank | paypal
   method: {
     type: String,
     enum: ["upi", "bank", "paypal"],
     required: true,
-    lowercase: true, // ✅ AUTO-FIX HERE
+    lowercase: true,
     trim: true
   },
 
-  // UPI
-  upiId: {
-    type: String,
-    default: ""
-  },
+  /* =========================
+     PAYMENT DETAILS (USER)
+  ========================= */
 
-  // BANK
-  accNumber: {
-    type: String,
-    default: ""
-  },
-  ifsc: {
-    type: String,
-    default: ""
-  },
-  holderName: {
-    type: String,
-    default: ""
-  },
+  upiId: String,
+  accNumber: String,
+  ifsc: String,
+  holderName: String,
 
-  // PAYPAL
-  paypalEmail: {
-    type: String,
-    default: ""
-  },
-  paypalBankName: {
-    type: String,
-    default: ""
-  },
-  paypalRoutingNumber: {
-    type: String,
-    default: ""
-  },
-  paypalAccountNumber: {
-    type: String,
-    default: ""
-  },
+  paypalEmail: String,
+  paypalBankName: String,
+  paypalRoutingNumber: String,
+  paypalAccountNumber: String,
+
+  /* =========================
+     WITHDRAWAL STATUS
+     (UPDATED – EXTENDED ONLY)
+  ========================= */
 
   status: {
     type: String,
-    enum: ["pending", "processed", "rejected"],
+    enum: [
+      "pending",    // user requested
+      "approved",   // admin approved
+      "processed",  // paid (legacy support)
+      "paid",       // ✅ NEW – final success
+      "rejected"    // admin rejected
+    ],
     default: "pending"
   },
+
+  /* =========================
+     ADMIN AUDIT (EXISTING)
+  ========================= */
+
+  admin: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+
+  adminNote: {
+    type: String,
+    default: ""
+  },
+
+  /* =========================
+     PAYMENT CONFIRMATION (NEW)
+  ========================= */
+
+  // Bank / UPI / PayPal reference ID
+  transactionRef: {
+    type: String,
+    default: null
+  },
+
+  /* =========================
+     TIMESTAMPS
+  ========================= */
 
   requestedAt: {
     type: Date,
     default: Date.now
   },
+
+  approvedAt: {
+    type: Date,
+    default: null
+  },
+
   processedAt: {
-    type: Date
+    type: Date,
+    default: null
   }
 });
 
