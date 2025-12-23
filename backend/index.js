@@ -14,6 +14,11 @@ console.log("Loaded MONGO_URI:", process.env.MONGO_URI);
 connectDB(process.env.MONGO_URI);
 
 // middlewares
+const allowedOrigins = [
+  "http://localhost:5174",
+  "https://ads-1-lnqy.onrender.com"
+];
+
 
 app.use(
   helmet({
@@ -55,8 +60,17 @@ app.use(morgan('dev'));
 
 app.use(
   cors({
-    origin: "http://localhost:5174",
-    credentials: true, // 🔴 REQUIRED
+    origin: function (origin, callback) {
+      // allow requests with no origin (Postman, mobile apps)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
   })
