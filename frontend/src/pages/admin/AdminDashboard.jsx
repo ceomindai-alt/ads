@@ -136,67 +136,101 @@ export default function AdminDashboard() {
         <h3 className="text-xl font-bold mb-4">Withdrawal Requests</h3>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b">
-              <tr>
-                <th>User</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Status</th>
-                <th className="text-right">Actions</th>
-              </tr>
-            </thead>
+  <table className="w-full text-sm border-collapse">
+    <thead>
+      <tr className="border-b text-gray-600 dark:text-gray-300">
+        <th className="py-3 px-2 text-left w-[32%]">User</th>
+        <th className="py-3 px-2 text-right w-[12%]">Amount</th>
+        <th className="py-3 px-2 text-center w-[12%]">Method</th>
+        <th className="py-3 px-2 text-center w-[16%]">Status</th>
+        <th className="py-3 px-2 text-right w-[18%]">Actions</th>
+      </tr>
+    </thead>
 
-            <tbody>
-              {withdrawals.length === 0 && (
-                <tr>
-                  <td colSpan="5" className="py-6 text-center opacity-60">
-                    No withdrawals found
-                  </td>
-                </tr>
-              )}
+    <tbody>
+      {withdrawals.length === 0 && (
+        <tr>
+          <td colSpan="5" className="py-6 text-center opacity-60">
+            No withdrawals found
+          </td>
+        </tr>
+      )}
 
-              {withdrawals.map((w) => (
-                <tr key={w._id} className="border-b">
-                  <td>{w.user?.email || "User"}</td>
-                  <td>${Number(w.amount).toFixed(2)}</td>
-                  <td className="uppercase">{w.method}</td>
-                  <td>{w.status}</td>
-                  <td className="text-right space-x-2">
-                    {w.status === "pending" && (
-                      <>
-                        <button
-                          disabled={actionLoading === w._id}
-                          onClick={() => approveWithdraw(w._id)}
-                          className="px-3 py-1 bg-blue-600 text-white text-xs rounded disabled:opacity-50"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          disabled={actionLoading === w._id}
-                          onClick={() => rejectWithdraw(w._id)}
-                          className="px-3 py-1 bg-red-600 text-white text-xs rounded disabled:opacity-50"
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
+      {withdrawals.map((w) => (
+        <tr
+          key={w._id}
+          className="border-b last:border-none hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+        >
+          {/* USER */}
+          <td className="py-3 px-2 text-left truncate">
+            {w.user?.email || "User"}
+          </td>
 
-                    {w.status === "approved" && (
-                      <button
-                        disabled={actionLoading === w._id}
-                        onClick={() => markPaid(w._id)}
-                        className="px-3 py-1 bg-green-600 text-white text-xs rounded disabled:opacity-50"
-                      >
-                        Mark Paid
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          {/* AMOUNT */}
+          <td className="py-3 px-2 text-right font-semibold">
+            ${Number(w.amount).toFixed(2)}
+          </td>
+
+          {/* METHOD */}
+          <td className="py-3 px-2 text-center uppercase">
+            {w.method}
+          </td>
+
+          {/* STATUS */}
+          <td className="py-3 px-2 text-center">
+            <span
+              className={`px-2 py-1 rounded text-xs font-semibold
+                ${
+                  w.status === "approved"
+                    ? "bg-blue-100 text-blue-700"
+                    : w.status === "rejected"
+                    ? "bg-red-100 text-red-700"
+                    : w.status === "paid"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-yellow-100 text-yellow-700"
+                }`}
+            >
+              {w.status}
+            </span>
+          </td>
+
+          {/* ACTIONS */}
+          <td className="py-3 px-2 text-right space-x-2">
+            {w.status === "pending" && (
+              <>
+                <button
+                  disabled={actionLoading === w._id}
+                  onClick={() => approveWithdraw(w._id)}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded disabled:opacity-50"
+                >
+                  Approve
+                </button>
+                <button
+                  disabled={actionLoading === w._id}
+                  onClick={() => rejectWithdraw(w._id)}
+                  className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded disabled:opacity-50"
+                >
+                  Reject
+                </button>
+              </>
+            )}
+
+            {w.status === "approved" && (
+              <button
+                disabled={actionLoading === w._id}
+                onClick={() => markPaid(w._id)}
+                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded disabled:opacity-50"
+              >
+                Mark Paid
+              </button>
+            )}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
       </div>
     </div>
   );

@@ -45,4 +45,5 @@ router.delete("/links/:id", auth, admin, adminController.deleteLink);
 router.get("/cpm", auth, admin, adminController.getCpmSettings);
 router.post("/cpm", auth, admin, adminController.updateCpmSettings);
 
+
 module.exports = router;
