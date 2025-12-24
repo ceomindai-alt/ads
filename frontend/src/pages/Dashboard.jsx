@@ -53,11 +53,11 @@ const Dashboard = () => {
       setLoading(true);
       try {
         const [statsRes, linksRes] = await Promise.all([
-          axiosInstance.get('/user/stats'),
+          axiosInstance.get('/earnings'), // ✅ single source of truth
           axiosInstance.get('/user/links?limit=100')
         ]);
 
-        setStats(statsRes.data);
+        setStats(statsRes.data || {});
         setLinks(linksRes.data.links || []);
       } catch (err) {
         console.error('Dashboard load failed:', err);
@@ -114,11 +114,14 @@ const Dashboard = () => {
       )
     },
     { key: 'clicks', header: 'Clicks' },
+
+    // ✅ KEPT – safe for CPM system
     {
       key: 'earnings',
       header: 'Earnings',
-      render: (e) => `$${Number(e || 0).toFixed(2)}`
+      render: (e) => `$${Number(e || 0).toFixed(4)}`
     },
+
     {
       key: 'createdAt',
       header: 'Created On',
@@ -137,17 +140,18 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <CardStat
           title="Total Earnings"
-          value={`$${(stats?.totalEarnings || 0).toFixed(2)}`}
+          value={`$${Number(stats?.totalEarnings || 0).toFixed(4)}`}
           icon={FaDollarSign}
           color="secondary"
         />
-        
+
         <CardStat
-          title="This Month Earnings"
-          value={`$${(stats?.monthEarnings || 0).toFixed(2)}`}
-          icon={FaCalendarAlt}
-          color="info"
+          title="Wallet Balance"
+          value={`$${Number(stats?.walletBalance || 0).toFixed(4)}`}
+          icon={FaDollarSign}
+          color="success"
         />
+
         <CardStat
           title="Total Clicks"
           value={stats?.totalClicks || 0}

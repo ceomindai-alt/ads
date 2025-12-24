@@ -48,16 +48,14 @@ export default function Withdraw() {
         }
 
         /* ----------------------------------------
-           ✅ OPTION 1 FIX:
-           SYNC WALLET FROM DASHBOARD EARNINGS
-           SINGLE SOURCE OF TRUTH
+           ✅ SINGLE SOURCE OF TRUTH – WALLET SYNC
         ---------------------------------------- */
         const earnings = await axiosInstance.get("/earnings");
-        setBalance(earnings.data.walletBalance || 0);
+        setBalance(Number(earnings.data.walletBalance || 0));
 
       } catch (err) {
         console.error("Load error", err);
-        setBalance(0); // safety
+        setBalance(0);
       }
     };
 
@@ -65,20 +63,45 @@ export default function Withdraw() {
   }, []);
 
   const submitRequest = async () => {
-    if (!amount || Number(amount) <= 0) {
+    const withdrawAmount = Number(amount);
+
+    if (!withdrawAmount || withdrawAmount <= 0) {
       alert("Enter a valid withdrawal amount");
       return;
     }
 
-    if (Number(amount) > balance) {
+    // ✅ Client-side minimum (must match backend)
+    if (withdrawAmount < 500) {
+      alert("Minimum withdrawal amount is ₹500");
+      return;
+    }
+
+    // ✅ Balance protection
+    if (withdrawAmount > balance) {
       alert("Withdrawal amount exceeds withdrawable balance");
+      return;
+    }
+
+    // ✅ Method-based validation (SAFE ADD)
+    if (method === "UPI" && !upiId) {
+      alert("Enter UPI ID");
+      return;
+    }
+
+    if (method === "Bank" && (!accNumber || !ifsc || !holderName)) {
+      alert("Enter complete bank details");
+      return;
+    }
+
+    if (method === "PayPal" && !paypalEmail) {
+      alert("Enter PayPal email");
       return;
     }
 
     setLoading(true);
     try {
       await axiosInstance.post("/withdraw/request", {
-        amount,
+        amount: withdrawAmount,
         method,
         upiId,
         accNumber,
@@ -94,15 +117,16 @@ export default function Withdraw() {
       setAmount("");
 
       /* ----------------------------------------
-         ✅ RE-SYNC FROM DASHBOARD AFTER WITHDRAW
+         ✅ RE-SYNC WALLET AFTER WITHDRAW
       ---------------------------------------- */
       const earnings = await axiosInstance.get("/earnings");
-      setBalance(earnings.data.walletBalance || 0);
+      setBalance(Number(earnings.data.walletBalance || 0));
 
       const updated = await axiosInstance.get("/withdraw/history");
-      setHistory(updated.data);
+      setHistory(updated.data || []);
 
     } catch (err) {
+      console.error(err);
       alert("Failed to submit request");
     } finally {
       setLoading(false);
@@ -121,7 +145,7 @@ export default function Withdraw() {
           {/* BALANCE CARD */}
           <div className="mb-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 text-white shadow">
             <p className="text-sm font-medium opacity-90">
-              Withdrawable Balance 
+              Withdrawable Balance
             </p>
             <p className="text-4xl font-bold mt-1">
               ₹{Number(balance).toFixed(2)}
@@ -262,8 +286,12 @@ export default function Withdraw() {
                     <tr key={i} className="border-b">
                       <td className="p-3">₹{row.amount}</td>
                       <td className="p-3">{row.method}</td>
-                      <td className="p-3">{row.status}</td>
-                      <td className="p-3">{row.date}</td>
+                      <td className="p-3">{row.status || "Pending"}</td>
+                      <td className="p-3">
+                        {row.date
+                          ? new Date(row.date).toLocaleDateString()
+                          : "-"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
