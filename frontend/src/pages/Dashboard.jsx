@@ -2,9 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   FaDollarSign,
-  FaMousePointer,
-  FaCalendarDay,
-  FaCalendarAlt
+  FaMousePointer
 } from 'react-icons/fa';
 import CardStat from '../components/CardStat';
 import Table from '../components/Table';
@@ -19,7 +17,6 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
-
 
 /* ================= UTIL ================= */
 const getLast7Days = () => {
@@ -54,7 +51,7 @@ const Dashboard = () => {
       setLoading(true);
       try {
         const [statsRes, linksRes] = await Promise.all([
-          axiosInstance.get('/earnings'), // ✅ single source of truth
+          axiosInstance.get('/earnings'),
           axiosInstance.get('/user/links?limit=100')
         ]);
 
@@ -68,8 +65,6 @@ const Dashboard = () => {
     };
 
     fetchData();
-
-    // 🔁 auto refresh every 30s
     const i = setInterval(fetchData, 30000);
     return () => clearInterval(i);
   }, []);
@@ -81,12 +76,12 @@ const Dashboard = () => {
     const days = getLast7Days();
     const clickMap = buildClicksPerDay(links);
 
-    const data = days.map((d) => ({
-      name: d,
-      clicks: clickMap[d] || 0
-    }));
-
-    setChartData(data);
+    setChartData(
+      days.map((d) => ({
+        name: d,
+        clicks: clickMap[d] || 0
+      }))
+    );
   }, [links]);
 
   if (loading) return <LoadingSpinner />;
@@ -101,7 +96,7 @@ const Dashboard = () => {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-purple-600 hover:underline"
+          className="text-purple-600 dark:text-purple-400 hover:underline"
         >
           {url}
         </a>
@@ -111,18 +106,17 @@ const Dashboard = () => {
       key: 'longUrl',
       header: 'Original URL',
       render: (url) => (
-        <span className="text-sm truncate max-w-xs block">{url}</span>
+        <span className="text-sm truncate max-w-xs block">
+          {url}
+        </span>
       )
     },
     { key: 'clicks', header: 'Clicks' },
-
-    // ✅ KEPT – safe for CPM system
     {
       key: 'earnings',
       header: 'Earnings',
       render: (e) => `$${Number(e || 0).toFixed(4)}`
     },
-
     {
       key: 'createdAt',
       header: 'Created On',
@@ -133,7 +127,8 @@ const Dashboard = () => {
   /* ================= UI ================= */
   return (
     <>
-      <h2 className="text-3xl font-bold text-gray-900 mb-6">
+      {/* TITLE */}
+      <h2 className="text-3xl font-bold mb-6 text-gray-900 dark:text-purple-700">
         User Dashboard
       </h2>
 
@@ -162,17 +157,36 @@ const Dashboard = () => {
       </div>
 
       {/* GRAPH */}
-      <div className="bg-white rounded-xl shadow p-6 mb-8 border">
-        <h3 className="text-xl font-semibold mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-8 border border-gray-200 dark:border-gray-700 transition-colors">
+        <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
           Clicks Per Day (Last 7 Days)
         </h3>
 
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="name" />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="currentColor"
+              className="text-gray-200 dark:text-gray-600"
+            />
+            <XAxis
+              dataKey="name"
+              stroke="currentColor"
+              className="text-gray-600 dark:text-gray-200"
+            />
+            <YAxis
+              allowDecimals={false}
+              stroke="currentColor"
+              className="text-gray-600 dark:text-gray-200"
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#111827',
+                border: '1px solid #374151',
+                color: '#fff'
+              }}
+              labelStyle={{ color: '#fff' }}
+            />
             <Line
               type="monotone"
               dataKey="clicks"

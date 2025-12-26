@@ -1,5 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react"; 
 import axiosInstance from "../utils/axiosInstance";
+
+/* =========================
+   VALIDATION HELPERS (SAFE ADD)
+========================= */
+const isValidUpi = (upi) =>
+  /^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}$/.test(upi);
+
+const isValidIfsc = (ifsc) =>
+  /^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc);
+
+const isValidAccountNumber = (acc) =>
+  /^[0-9]{9,18}$/.test(acc);
+
+const isValidName = (name) =>
+  /^[a-zA-Z ]{3,}$/.test(name);
+
+const isValidEmail = (email) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 export default function Withdraw() {
   const [amount, setAmount] = useState("");
@@ -16,24 +34,16 @@ export default function Withdraw() {
   const [paypalRoutingNumber, setPaypalRoutingNumber] = useState("");
   const [paypalAccountNumber, setPaypalAccountNumber] = useState("");
 
-  // BALANCE (FROM DB)
   const [balance, setBalance] = useState(0);
-
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        /* ----------------------------------------
-           EXISTING: Withdrawal History
-        ---------------------------------------- */
         const res = await axiosInstance.get("/withdraw/history");
         setHistory(res.data || []);
 
-        /* ----------------------------------------
-           EXISTING: Payment Details
-        ---------------------------------------- */
         const profile = await axiosInstance.get("/user/payment-details");
         if (profile.data) {
           setUpiId(profile.data.upiId || "");
@@ -47,12 +57,8 @@ export default function Withdraw() {
           setPaypalAccountNumber(profile.data.paypalAccountNumber || "");
         }
 
-        /* ----------------------------------------
-           ✅ SINGLE SOURCE OF TRUTH – WALLET SYNC
-        ---------------------------------------- */
         const earnings = await axiosInstance.get("/earnings");
         setBalance(Number(earnings.data.walletBalance || 0));
-
       } catch (err) {
         console.error("Load error", err);
         setBalance(0);
@@ -70,32 +76,67 @@ export default function Withdraw() {
       return;
     }
 
-    // ✅ Client-side minimum (must match backend)
-    if (withdrawAmount < 500) {
+    if (withdrawAmount < 1) {
       alert("Minimum withdrawal amount is ₹500");
       return;
     }
 
-    // ✅ Balance protection
     if (withdrawAmount > balance) {
       alert("Withdrawal amount exceeds withdrawable balance");
       return;
     }
 
-    // ✅ Method-based validation (SAFE ADD)
-    if (method === "UPI" && !upiId) {
-      alert("Enter UPI ID");
-      return;
+    /* =========================
+       STRICT METHOD VALIDATION (SAFE ADD)
+    ========================= */
+
+    if (method === "UPI") {
+      if (!upiId) {
+        alert("Enter UPI ID");
+        return;
+      }
+      if (!isValidUpi(upiId)) {
+        alert("Enter a valid UPI ID (example: name@bank)");
+        return;
+      }
     }
 
-    if (method === "Bank" && (!accNumber || !ifsc || !holderName)) {
-      alert("Enter complete bank details");
-      return;
+    if (method === "Bank") {
+      if (!holderName || !accNumber || !ifsc) {
+        alert("Enter complete bank details");
+        return;
+      }
+      if (!isValidName(holderName)) {
+        alert("Enter valid account holder name");
+        return;
+      }
+      if (!isValidAccountNumber(accNumber)) {
+        alert("Enter valid bank account number");
+        return;
+      }
+      if (!isValidIfsc(ifsc)) {
+        alert("Enter valid IFSC code");
+        return;
+      }
     }
 
-    if (method === "PayPal" && !paypalEmail) {
-      alert("Enter PayPal email");
-      return;
+    if (method === "PayPal") {
+      if (!paypalEmail) {
+        alert("Enter PayPal email");
+        return;
+      }
+      if (!isValidEmail(paypalEmail)) {
+        alert("Enter a valid PayPal email");
+        return;
+      }
+      if (!paypalAccountNumber) {
+        alert("Enter PayPal bank account number");
+        return;
+      }
+      if (!isValidAccountNumber(paypalAccountNumber)) {
+        alert("Enter valid PayPal bank account number");
+        return;
+      }
     }
 
     setLoading(true);
@@ -116,15 +157,11 @@ export default function Withdraw() {
       alert("Withdrawal request submitted!");
       setAmount("");
 
-      /* ----------------------------------------
-         ✅ RE-SYNC WALLET AFTER WITHDRAW
-      ---------------------------------------- */
       const earnings = await axiosInstance.get("/earnings");
       setBalance(Number(earnings.data.walletBalance || 0));
 
       const updated = await axiosInstance.get("/withdraw/history");
       setHistory(updated.data || []);
-
     } catch (err) {
       console.error(err);
       alert("Failed to submit request");
@@ -132,17 +169,20 @@ export default function Withdraw() {
       setLoading(false);
     }
   };
-    /* =========================
+
+  /* =========================
      DATE FORMATTER (SAFE ADD)
   ========================= */
   const formatDate = (row) => {
     if (row.date) return new Date(row.date).toLocaleDateString();
     if (row.createdAt) return new Date(row.createdAt).toLocaleDateString();
     if (row.updatedAt) return new Date(row.updatedAt).toLocaleDateString();
-    if (row._id) return new Date(parseInt(row._id.substring(0, 8), 16) * 1000).toLocaleDateString();
+    if (row._id)
+      return new Date(
+        parseInt(row._id.substring(0, 8), 16) * 1000
+      ).toLocaleDateString();
     return "-";
   };
-
   return (
     <div className="min-h-screen p-4 sm:p-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
       <div className="flex justify-center">

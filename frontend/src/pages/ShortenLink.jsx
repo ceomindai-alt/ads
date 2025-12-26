@@ -53,6 +53,9 @@ const ShortenLink = () => {
 
       const finalShortUrl = `${backendBase}/r/${code}`;
       setShortenedLink(finalShortUrl);
+      setLongUrl("");
+      setAlias("");
+
 
       toast.success("Link successfully shortened!");
     } catch (error) {

@@ -11,14 +11,14 @@ const AuthLayout = () => {
         <ThemeToggle />
       </div>
 
-      {/* Center Container */}
+      {/* Center Container (NO CARD HERE) */}
       <div className="flex-grow flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
-            <Outlet />
-          </div>
+        <div className="w-full max-w-sm sm:max-w-md">
+          {/* 🔽 Login / Register already has its own card */}
+          <Outlet />
         </div>
       </div>
+
     </div>
   );
 };

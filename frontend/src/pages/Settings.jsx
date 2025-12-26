@@ -33,102 +33,36 @@ export default function Settings() {
     loadProfile();
   }, []);
 
-  /* NORMAL PASSWORD CHANGE */
-  const changePassword = async () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      return setMsg("Fill all fields");
-    }
-    if (newPassword !== confirmPassword) {
-      return setMsg("Passwords do not match");
-    }
-
-    setLoading(true);
-    setMsg("");
-
-    try {
-      await axiosInstance.post("/user/change-password", {
-        currentPassword,
-        newPassword
-      });
-      setMsg("Password changed successfully");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch {
-      setMsg("Current password is incorrect");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* SEND OTP */
-  const sendOtp = async () => {
-    setLoading(true);
-    setMsg("");
-
-    try {
-      await axiosInstance.post("/auth/forgot-password", { email });
-      setOtpMode(true);
-      setMsg("4-digit OTP sent to your email");
-    } catch {
-      setMsg("Failed to send OTP");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* RESET VIA OTP */
-  const resetViaOtp = async () => {
-    if (!otp || !forgotNewPassword || !forgotConfirmPassword) {
-      return setMsg("Fill all fields");
-    }
-    if (forgotNewPassword !== forgotConfirmPassword) {
-      return setMsg("Passwords do not match");
-    }
-
-    setLoading(true);
-    setMsg("");
-
-    try {
-      await axiosInstance.post("/auth/reset-password", {
-        email,
-        otp,
-        newPassword: forgotNewPassword
-      });
-      setMsg("Password reset successfully");
-      setOtpMode(false);
-      setOtp("");
-      setForgotNewPassword("");
-      setForgotConfirmPassword("");
-    } catch {
-      setMsg("Invalid or expired OTP");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-100 flex justify-center pt-10">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex justify-center pt-10 transition-colors">
       <div className="w-full max-w-2xl px-4 space-y-8">
 
-        <h2 className="text-3xl font-bold text-center">Account Settings</h2>
+        <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white">
+          Account Settings
+        </h2>
 
         {/* PROFILE */}
-        <div className="bg-white shadow rounded-xl p-6">
-          <h3 className="text-xl font-semibold mb-4">Profile Information</h3>
+        <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-6 border border-gray-200 dark:border-gray-700 transition-colors">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+            Profile Information
+          </h3>
 
-          <label className="block mb-1">Username</label>
+          <label className="block mb-1 text-gray-700 dark:text-gray-300">
+            Username
+          </label>
           <input
             value={username}
             disabled
-            className="w-full p-3 mb-4 rounded-lg border bg-gray-100"
+            className="w-full p-3 mb-4 rounded-lg border bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-not-allowed"
           />
 
-          <label className="block mb-1">Email</label>
+          <label className="block mb-1 text-gray-700 dark:text-gray-300">
+            Email
+          </label>
           <input
             value={email}
             disabled
-            className="w-full p-3 rounded-lg border bg-gray-100"
+            className="w-full p-3 rounded-lg border bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-not-allowed"
           />
         </div>
 

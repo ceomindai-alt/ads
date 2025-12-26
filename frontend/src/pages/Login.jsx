@@ -66,16 +66,6 @@ const Login = () => {
           togglePasswordVisibility={() => setIsPasswordVisible(!isPasswordVisible)}
         />
 
-        {/* FORGOT PASSWORD LINK */}
-        <div className="flex justify-end mb-6">
-          <Link
-            to="/forgot-password"
-            className="text-sm font-medium text-primary hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300"
-          >
-            Forgot Password?
-          </Link>
-        </div>
-
         {/* LOGIN BUTTON */}
         <Button type="submit" loading={loading} className="w-full">
           Log In
