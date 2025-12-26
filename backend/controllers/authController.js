@@ -37,9 +37,21 @@ exports.register = async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    let referrer = null;
+    /* =========================
+       REFERRAL (SAFE + LOCKED)
+    ========================= */
+    let referredBy = null;
+
     if (referralCode) {
-      referrer = await User.findOne({ referralCode });
+      const referrer = await User.findOne({ referralCode });
+
+      // ❌ Prevent invalid referral
+      if (referrer) {
+        // ❌ Prevent self-referral (extra safety)
+        if (referrer.email !== email) {
+          referredBy = referrer._id;
+        }
+      }
     }
 
     const newUser = new User({
@@ -47,7 +59,7 @@ exports.register = async (req, res) => {
       email,
       passwordHash: hashed,
       referralCode: generateShortCode(),
-      referredBy: referrer ? referrer._id : null
+      referredBy // 🔒 set ONCE, schema makes it immutable
     });
 
     await newUser.save();
@@ -75,7 +87,7 @@ exports.register = async (req, res) => {
 };
 
 /* ======================================================
-   LOGIN
+   LOGIN (❗ NEVER TOUCH REFERRAL HERE)
 ====================================================== */
 exports.login = async (req, res) => {
   try {
@@ -171,7 +183,7 @@ exports.changePassword = async (req, res) => {
 };
 
 /* ======================================================
-   FORGOT PASSWORD (OTP – PRIMARY FLOW)
+   FORGOT PASSWORD (OTP)
 ====================================================== */
 exports.forgotPasswordOtp = async (req, res) => {
   try {
@@ -188,8 +200,7 @@ exports.forgotPasswordOtp = async (req, res) => {
     user.resetOtpExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    // TODO: send via Nodemailer
-    console.log("OTP:", otp);
+    console.log("OTP:", otp); // TODO: send email
 
     return res.json({
       success: true,
@@ -221,11 +232,7 @@ exports.resetPasswordWithOtp = async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    if (
-      !user ||
-      !user.resetOtpHash ||
-      user.resetOtpExpires < Date.now()
-    ) {
+    if (!user || !user.resetOtpHash || user.resetOtpExpires < Date.now()) {
       return res.status(400).json({ message: "OTP expired or invalid" });
     }
 

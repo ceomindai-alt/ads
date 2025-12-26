@@ -50,7 +50,7 @@ exports.premiumStep1 = async (req, res) => {
 
   
   res.setHeader("Content-Security-Policy", ADSTERRA_CSP);
-  res.send(renderPage("Step 1 of 3", "Please wait to continue", 15, `/r/${req.params.code}/step2`, false));
+  res.send(renderPage("Step 1 of 3", "Please wait to continue", 15, `/r/${req.params.code}/page2`, false));
 };
 
 exports.premiumStep2 = async (req, res) => {
@@ -60,7 +60,7 @@ exports.premiumStep2 = async (req, res) => {
   if (!link) return res.status(404).send("Invalid link");
 
   res.setHeader("Content-Security-Policy", ADSTERRA_CSP);
-  res.send(renderPage("Step 2 of 3", "Almost there…", 15, `/r/${req.params.code}/step3`, false));
+  res.send(renderPage("Step 2 of 3", "Almost there…", 15, `/r/${req.params.code}/page3`, false));
 };
 
 exports.premiumStep3 = async (req, res) => {

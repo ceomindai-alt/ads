@@ -1,6 +1,33 @@
 const User = require("../models/User");
 const Link = require("../models/Link");
 
+/* ======================================================
+   REDIRECT REFERRAL → REGISTER
+====================================================== */
+exports.redirectReferral = async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    const refUser = await User.findOne({ referralCode: code }).select("_id");
+
+    // ❌ Invalid referral → normal register
+    if (!refUser) {
+      return res.redirect(`${process.env.FRONTEND_URL}/register`);
+    }
+
+    // ✅ Valid referral → pass code
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/register?ref=${code}`
+    );
+  } catch (err) {
+    console.error("Referral redirect error:", err);
+    return res.redirect(`${process.env.FRONTEND_URL}/register`);
+  }
+};
+
+/* ======================================================
+   GET MY REFERRALS (EXISTING – UNTOUCHED)
+====================================================== */
 exports.getMyReferrals = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -25,8 +52,9 @@ exports.getMyReferrals = async (req, res) => {
     const usersData = [];
 
     for (const refUser of referredUsers) {
-      // Fetch links created by referred user
-      const links = await Link.find({ user: refUser._id }).select("clicks earnings");
+      const links = await Link.find({ user: refUser._id }).select(
+        "clicks earnings"
+      );
 
       let userClicks = 0;
       let userEarnings = 0;
@@ -36,7 +64,6 @@ exports.getMyReferrals = async (req, res) => {
         userEarnings += Number(link.earnings || 0);
       });
 
-      // ✅ Commission calculation (safe rounding)
       const commission = Number(
         ((userEarnings * commissionRate) / 100).toFixed(2)
       );
@@ -54,7 +81,7 @@ exports.getMyReferrals = async (req, res) => {
 
     return res.json({
       referralCode: user.referralCode,
-      commissionRate, // dynamic (10–20)
+      commissionRate,
       totalReferrals: referredUsers.length,
       totalEarnings: Number(totalEarnings.toFixed(2)),
       users: usersData

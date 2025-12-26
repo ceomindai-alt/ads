@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   /* ======================================================
-     CLEAR AUTH
+     CLEAR AUTH (HARD RESET)
   ====================================================== */
   const clearAuth = () => {
     localStorage.removeItem("token");
@@ -61,6 +61,7 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data);
       setIsAuthenticated(true);
     } catch (err) {
+      // Token invalid / expired
       clearAuth();
     } finally {
       setIsLoading(false);
@@ -72,10 +73,13 @@ export const AuthProvider = ({ children }) => {
   }, [loadUser]);
 
   /* ======================================================
-     LOGIN
+     LOGIN (CRITICAL FIX)
   ====================================================== */
   const login = async (email, password) => {
     try {
+      // 🔥 HARD RESET BEFORE LOGIN (prevents account switch bug)
+      clearAuth();
+
       const res = await axiosInstance.post("/auth/login", {
         email,
         password
