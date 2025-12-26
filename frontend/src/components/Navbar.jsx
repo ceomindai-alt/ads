@@ -1,13 +1,20 @@
 // src/components/Navbar.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaBars, FaUserCircle, FaSignOutAlt } from "react-icons/fa";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const Navbar = ({ setSidebarOpen }) => {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const location = useLocation();
+
+  /* ✅ AUTO-CLOSE MENUS ON ROUTE CHANGE */
+  useEffect(() => {
+    setOpen(false);
+    setSidebarOpen(false);
+  }, [location.pathname, setSidebarOpen]);
 
   return (
     <header className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
@@ -38,7 +45,9 @@ const Navbar = ({ setSidebarOpen }) => {
               className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-primary transition"
             >
               <FaUserCircle className="w-6 h-6" />
-              <span className="hidden sm:block">{user?.username || "User"}</span>
+              <span className="hidden sm:block">
+                {user?.username || "User"}
+              </span>
             </button>
 
             {open && (
@@ -52,7 +61,10 @@ const Navbar = ({ setSidebarOpen }) => {
                 </Link>
 
                 <button
-                  onClick={logout}
+                  onClick={() => {
+                    setOpen(false);
+                    logout();
+                  }}
                   className="w-full flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600"
                 >
                   <FaSignOutAlt className="mr-2" /> Logout
