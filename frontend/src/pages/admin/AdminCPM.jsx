@@ -4,7 +4,7 @@ import axiosInstance from "../../utils/axiosInstance";
 export default function AdminCPM() {
   const [cpms, setCpms] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingIndex, setSavingIndex] = useState(null);
 
   /* LOAD CPM */
   const loadCPM = async () => {
@@ -25,20 +25,26 @@ export default function AdminCPM() {
   /* UPDATE INPUT */
   const updateValue = (i, value) => {
     const updated = [...cpms];
-    updated[i].cpm = Number(value);
+    updated[i].cpm = value === "" ? "" : Number(value);
     setCpms(updated);
   };
 
-  /* SAVE TO DB */
-  const saveChanges = async () => {
-    setSaving(true);
+  /* SAVE SINGLE CPM */
+  const saveSingle = async (i) => {
+    const item = cpms[i];
+    if (item.cpm === "" || Number(item.cpm) <= 0) {
+      alert("Enter a valid CPM value");
+      return;
+    }
+
+    setSavingIndex(i);
     try {
-      await axiosInstance.post("/admin/cpm", cpms);
-      alert("CPM updated successfully");
+      await axiosInstance.post("/admin/cpm", [item]);
+      alert(`${item.country} CPM updated`);
     } catch (e) {
       alert("Failed to save CPM");
     } finally {
-      setSaving(false);
+      setSavingIndex(null);
     }
   };
 
@@ -46,37 +52,40 @@ export default function AdminCPM() {
     <div className="min-h-screen bg-gray-100 p-6">
       <h2 className="text-3xl font-bold mb-6">CPM Settings</h2>
 
-      <div className="bg-white shadow rounded-xl p-6 max-w-xl">
-        {loading && <p>Loading...</p>}
+      {loading && <p>Loading...</p>}
 
-        {!loading && cpms.length === 0 && (
-          <p className="opacity-60">No CPM data found</p>
-        )}
+      {!loading && cpms.length === 0 && (
+        <p className="opacity-60">No CPM data found</p>
+      )}
 
+      {/* ✅ 3 COLUMN GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {cpms.map((item, i) => (
-          <div key={item.countryCode} className="mb-5">
-            <label className="block font-semibold mb-1">
+          <div
+            key={item.countryCode}
+            className="bg-white shadow rounded-xl p-5 border"
+          >
+            <label className="block font-semibold mb-2">
               {item.country}
             </label>
+
             <input
               type="number"
               step="0.01"
               value={item.cpm}
               onChange={(e) => updateValue(i, e.target.value)}
-              className="w-full p-3 border rounded-lg"
+              className="w-full p-3 border rounded-lg mb-3"
             />
+
+            <button
+              disabled={savingIndex === i}
+              onClick={() => saveSingle(i)}
+              className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-semibold"
+            >
+              {savingIndex === i ? "Saving..." : "Save"}
+            </button>
           </div>
         ))}
-
-        {cpms.length > 0 && (
-          <button
-            disabled={saving}
-            onClick={saveChanges}
-            className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg"
-          >
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-        )}
       </div>
     </div>
   );

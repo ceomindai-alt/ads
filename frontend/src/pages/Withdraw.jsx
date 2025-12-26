@@ -132,6 +132,16 @@ export default function Withdraw() {
       setLoading(false);
     }
   };
+    /* =========================
+     DATE FORMATTER (SAFE ADD)
+  ========================= */
+  const formatDate = (row) => {
+    if (row.date) return new Date(row.date).toLocaleDateString();
+    if (row.createdAt) return new Date(row.createdAt).toLocaleDateString();
+    if (row.updatedAt) return new Date(row.updatedAt).toLocaleDateString();
+    if (row._id) return new Date(parseInt(row._id.substring(0, 8), 16) * 1000).toLocaleDateString();
+    return "-";
+  };
 
   return (
     <div className="min-h-screen p-4 sm:p-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
@@ -143,12 +153,12 @@ export default function Withdraw() {
           </h2>
 
           {/* BALANCE CARD */}
-          <div className="mb-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 text-white shadow">
+          <div className="text-center mb-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 text-white shadow ">
             <p className="text-sm font-medium opacity-90">
               Withdrawable Balance
             </p>
             <p className="text-4xl font-bold mt-1">
-              ₹{Number(balance).toFixed(2)}
+              ${Number(balance).toFixed(2)}
             </p>
             <p className="text-xs opacity-80 mt-2">
               This is the amount you can withdraw.
@@ -161,7 +171,7 @@ export default function Withdraw() {
 
             <div className="mb-4">
               <label className="block mb-1 font-semibold">
-                Withdraw Amount (₹)
+                Withdraw Amount ($)
               </label>
               <input
                 type="number"
@@ -284,13 +294,10 @@ export default function Withdraw() {
                   )}
                   {history.map((row, i) => (
                     <tr key={i} className="border-b">
-                      <td className="p-3">₹{row.amount}</td>
+                      <td className="p-3">${row.amount}</td>
                       <td className="p-3">{row.method}</td>
                       <td className="p-3">{row.status || "Pending"}</td>
-                      <td className="p-3">
-                        {row.date
-                          ? new Date(row.date).toLocaleDateString()
-                          : "-"}
+                      <td className="p-3">{formatDate(row)}
                       </td>
                     </tr>
                   ))}
