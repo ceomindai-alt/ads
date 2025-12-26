@@ -204,6 +204,8 @@ function renderPage(title, message, waitSeconds, nextUrl, isFinal) {
 <html>
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="monetag" content="239a48247cdfe771fb6a2a1b963ab087">
+<script src="https://quge5.com/88/tag.min.js" data-zone="196203" async data-cfasync="false"></script>
 <title>${title}</title>
 
 <style>
