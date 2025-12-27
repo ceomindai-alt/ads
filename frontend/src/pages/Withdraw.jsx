@@ -76,7 +76,7 @@ export default function Withdraw() {
       return;
     }
 
-    if (withdrawAmount < 1) {
+    if (withdrawAmount < 0.0001) {
       alert("Minimum withdrawal amount is ₹500");
       return;
     }
@@ -143,7 +143,8 @@ export default function Withdraw() {
     try {
       await axiosInstance.post("/withdraw/request", {
         amount: withdrawAmount,
-        method,
+        method: method.toLowerCase(), // ✅ REQUIRED
+
         upiId,
         accNumber,
         ifsc,
@@ -198,7 +199,8 @@ export default function Withdraw() {
               Withdrawable Balance
             </p>
             <p className="text-4xl font-bold mt-1">
-              ${Number(balance).toFixed(2)}
+              ${Number(balance).toFixed(4)}
+              
             </p>
             <p className="text-xs opacity-80 mt-2">
               This is the amount you can withdraw.

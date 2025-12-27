@@ -32,11 +32,7 @@ exports.createWithdraw = async (req, res) => {
     /* =========================
        ONE PENDING WITHDRAWAL ONLY
     ========================= */
-    if (user.hasPendingWithdrawal) {
-      return res
-        .status(400)
-        .json({ message: "You already have a pending withdrawal" });
-    }
+    
 
     const numericAmount = parseFloat(amount);
     if (!numericAmount || numericAmount <= 0) {
@@ -73,11 +69,17 @@ exports.createWithdraw = async (req, res) => {
     /* =========================
        LOCK BALANCE (CRITICAL FIX)
     ========================= */
-    user.walletBalance = +(user.walletBalance - numericAmount).toFixed(4);
-    user.lockedBalance = +(user.lockedBalance + numericAmount).toFixed(4);
-    user.hasPendingWithdrawal = true;
-    user.lastWithdrawalAt = new Date();
-    await user.save();
+  user.walletBalance = +(user.walletBalance - numericAmount).toFixed(4);
+user.lockedBalance = +(user.lockedBalance + numericAmount).toFixed(4);
+
+// ❌ do NOT block future withdrawals
+user.hasPendingWithdrawal = false;
+
+// keep audit timestamp
+user.lastWithdrawalAt = new Date();
+
+await user.save();
+
 
     /* =========================
        CREATE WITHDRAW RECORD

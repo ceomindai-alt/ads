@@ -12,24 +12,132 @@ const Cpm = require("../models/Cpm");
     console.log("MongoDB connected");
 
     const data = [
-      { country: "United States", countryCode: "US", cpm: 19 },
-      { country: "United Kingdom", countryCode: "GB", cpm: 17 },
-      { country: "Canada", countryCode: "CA", cpm: 11.5 },
-      { country: "Australia", countryCode: "AU", cpm: 10.5 },
-      { country: "Germany", countryCode: "DE", cpm: 9.5 },
-      { country: "France", countryCode: "FR", cpm: 8.5 },
-      { country: "Netherlands", countryCode: "NL", cpm: 8.5 },
-      { country: "Italy", countryCode: "IT", cpm: 7 },
-      { country: "Spain", countryCode: "ES", cpm: 7 },
-      { country: "Sweden", countryCode: "SE", cpm: 6 },
-      { country: "Switzerland", countryCode: "CH", cpm: 10 },
-      { country: "Singapore", countryCode: "SG", cpm: 7.5 },
-      { country: "Japan", countryCode: "JP", cpm: 6 },
-      { country: "South Korea", countryCode: "KR", cpm: 5 },
-      { country: "United Arab Emirates", countryCode: "AE", cpm: 7 },
-      { country: "Saudi Arabia", countryCode: "SA", cpm: 5 },
-      { country: "Brazil", countryCode: "BR", cpm: 3 },
-      { country: "India", countryCode: "IN", cpm: 0.82 }
+      {
+        country: "United States",
+        countryCode: "US",
+        cpm: 19,
+        minCpm: 6,
+        maxCpm: 10
+      },
+      {
+        country: "United Kingdom",
+        countryCode: "GB",
+        cpm: 17,
+        minCpm: 4,
+        maxCpm: 7
+      },
+      {
+        country: "Canada",
+        countryCode: "CA",
+        cpm: 11.5,
+        minCpm: 3.5,
+        maxCpm: 6
+      },
+      {
+        country: "Australia",
+        countryCode: "AU",
+        cpm: 10.5,
+        minCpm: 3.5,
+        maxCpm: 6.5
+      },
+      {
+        country: "Germany",
+        countryCode: "DE",
+        cpm: 9.5,
+        minCpm: 3,
+        maxCpm: 5.5
+      },
+      {
+        country: "France",
+        countryCode: "FR",
+        cpm: 8.5,
+        minCpm: 2.5,
+        maxCpm: 5
+      },
+      {
+        country: "Netherlands",
+        countryCode: "NL",
+        cpm: 8.5,
+        minCpm: 2.5,
+        maxCpm: 5
+      },
+      {
+        country: "Italy",
+        countryCode: "IT",
+        cpm: 7,
+        minCpm: 2,
+        maxCpm: 4
+      },
+      {
+        country: "Spain",
+        countryCode: "ES",
+        cpm: 7,
+        minCpm: 2,
+        maxCpm: 4
+      },
+      {
+        country: "Sweden",
+        countryCode: "SE",
+        cpm: 6,
+        minCpm: 2,
+        maxCpm: 3.5
+      },
+      {
+        country: "Switzerland",
+        countryCode: "CH",
+        cpm: 10,
+        minCpm: 3.5,
+        maxCpm: 6
+      },
+      {
+        country: "Singapore",
+        countryCode: "SG",
+        cpm: 7.5,
+        minCpm: 2.5,
+        maxCpm: 4.5
+      },
+      {
+        country: "Japan",
+        countryCode: "JP",
+        cpm: 6,
+        minCpm: 2,
+        maxCpm: 3.5
+      },
+      {
+        country: "South Korea",
+        countryCode: "KR",
+        cpm: 5,
+        minCpm: 1.8,
+        maxCpm: 3
+      },
+      {
+        country: "United Arab Emirates",
+        countryCode: "AE",
+        cpm: 7,
+        minCpm: 2,
+        maxCpm: 4
+      },
+      {
+        country: "Saudi Arabia",
+        countryCode: "SA",
+        cpm: 5,
+        minCpm: 1.8,
+        maxCpm: 3.5
+      },
+      {
+        country: "Brazil",
+        countryCode: "BR",
+        cpm: 3,
+        minCpm: 1.5,
+        maxCpm: 3
+      },
+      {
+        country: "India",
+        countryCode: "IN",
+        cpm: 0.82,
+        minCpm: 0.5,
+        maxCpm: 1
+      }
     ];
 
     /* =========================================
@@ -38,7 +146,7 @@ const Cpm = require("../models/Cpm");
     await Cpm.deleteMany({});
     await Cpm.insertMany(data);
 
-    console.log("CPM Seeded");
+    console.log("CPM Seeded Successfully");
 
     await mongoose.connection.close();
     process.exit(0);
