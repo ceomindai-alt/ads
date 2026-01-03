@@ -1,0 +1,21 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar for a cleaner look */
+/* For WebKit browsers (Chrome, Safari) */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1; /* Slate-300 */
+  border-radius: 20px;
+  border: 2px solid transparent;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #475569; /* Slate-600 */
+}
